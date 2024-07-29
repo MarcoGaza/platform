@@ -1,0 +1,2 @@
+## Main table normal Japanese inner Use the same form Form
+#parse("codegen/vue/views/components/form_sub_normal.vue.vm")

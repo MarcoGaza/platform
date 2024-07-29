@@ -1,0 +1,28 @@
+-- Menu SQL
+INSERT INTO system_menu(
+    name, permission, type, sort, parent_id,
+    path, icon, component, status, component_name
+)
+VALUES (
+    '${table.classComment}Management', '', 2, 0, ${table.parentMenuId},
+    '${simpleClassName_strikeCase}', '', '${table.moduleName}/${table.businessName}/index', 0, '${table.className}'
+);
+
+-- Button parent menuID
+-- Only supports temporarily MySQL。If you are Oracle、PostgreSQL、SQLServer Words，Need to be modified manually @parentId Part of the code
+SELECT @parentId := LAST_INSERT_ID();
+
+-- Button SQL
+#set ($functionNames = ['Query', 'Create', 'Update', 'Delete', 'Export'])
+#set ($functionOps = ['query', 'create', 'update', 'delete', 'export'])
+#foreach ($functionName in $functionNames)
+#set ($index = $foreach.count - 1)
+INSERT INTO system_menu(
+    name, permission, type, sort, parent_id,
+    path, icon, component, status
+)
+VALUES (
+    '${table.classComment}${functionName}', '${permissionPrefix}:${functionOps.get($index)}', 3, $foreach.count, @parentId,
+    '', '', '', 0
+);
+#end

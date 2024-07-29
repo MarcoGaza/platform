@@ -1,0 +1,32 @@
+### Request /add
+POST {{baseUrl}}/crm/permission/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "userId": 1,
+  "bizType": 2,
+  "bizId": 2,
+  "level": 1
+}
+
+### Request /update
+PUT {{baseUrl}}/crm/permission/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "userId": 1,
+  "bizType": 2,
+  "bizId": 2,
+  "level": 1,
+  "id": 1
+}
+
+### Request /delete
+DELETE {{baseUrl}}/crm/permission/delete?bizType=2&bizId=1&id=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+

@@ -1,0 +1,49 @@
+#set ($subTable = $subTables.get($subIndex))##Current table
+#set ($subColumns = $subColumnsList.get($subIndex))##Current field array
+package ${basePackage}.module.${subTable.moduleName}.dal.dataobject.${subTable.businessName};
+
+import lombok.*;
+import java.util.*;
+#foreach ($column in $subColumns)
+#if (${column.javaType} == "BigDecimal")
+import java.math.BigDecimal;
+#end
+#if (${column.javaType} == "LocalDateTime")
+import java.time.LocalDateTime;
+#end
+#end
+import com.baomidou.mybatisplus.annotation.*;
+import ${BaseDOClassName};
+
+/**
+ * ${subTable.classComment} DO
+ *
+ * @author ${subTable.author}
+ */
+@TableName("${subTable.tableName.toLowerCase()}")
+@KeySequence("${subTable.tableName.toLowerCase()}_seq") // Used for Oracle、PostgreSQL、Kingbase、DB2、H2 Self-increment of the primary key of the database。If yes MySQL Wait for database，Optional。
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ${subTable.className}DO extends BaseDO {
+
+#foreach ($column in $subColumns)
+#if (!${baseDOFields.contains(${column.javaField})})##Exclude BaseDO Fields
+    /**
+     * ${column.columnComment}
+    #if ("$!column.dictType" != "")##Processing enumeration values
+     *
+     * Enumeration {@link TODO ${column.dictType} Corresponding class}
+    #end
+     */
+    #if (${column.primaryKey})##Processing primary key
+    @TableId#if (${column.javaType} == 'String')(type = IdType.INPUT)#end
+    #end
+    private ${column.javaType} ${column.javaField};
+#end
+#end
+
+}

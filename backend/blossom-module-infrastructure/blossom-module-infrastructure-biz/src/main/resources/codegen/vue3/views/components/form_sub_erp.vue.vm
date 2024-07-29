@@ -1,0 +1,205 @@
+#set ($subColumns = $subColumnsList.get($subIndex))##Current field array
+#set ($subSimpleClassName = $subSimpleClassNames.get($subIndex))
+#set ($subJoinColumn = $subJoinColumns.get($subIndex))##Current join Field
+<template>
+  <Dialog :title="dialogTitle" v-model="dialogVisible">
+    <el-form
+      ref="formRef"
+      :model="formData"
+      :rules="formRules"
+      label-width="100px"
+      v-loading="formLoading"
+    >
+#foreach($column in $subColumns)
+    #if ($column.createOperation || $column.updateOperation)
+        #set ($dictType = $column.dictType)
+        #set ($javaField = $column.javaField)
+        #set ($javaType = $column.javaType)
+        #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+        #set ($comment = $column.columnComment)
+        #set ($dictMethod = "getDictOptions")## Which one to use for calculation dict Dictionary method
+        #if ($javaType == "Integer" || $javaType == "Long" || $javaType == "Byte" || $javaType == "Short")
+            #set ($dictMethod = "getIntDictOptions")
+        #elseif ($javaType == "String")
+            #set ($dictMethod = "getStrDictOptions")
+        #elseif ($javaType == "Boolean")
+            #set ($dictMethod = "getBoolDictOptions")
+        #end
+        #if ( $column.id == $subJoinColumn.id) ## Special：Ignore the master and sub-tables join Field，No need to fill in
+        #elseif ($column.htmlType == "input" && !$column.primaryKey)## Ignore primary key，Not in the form
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-input v-model="formData.${javaField}" placeholder="Please enter${comment}" />
+      </el-form-item>
+        #elseif($column.htmlType == "imageUpload")## Upload pictures
+      <el-form-item label="${comment}" prop="${javaField}">
+        <UploadImg v-model="formData.${javaField}" />
+      </el-form-item>
+        #elseif($column.htmlType == "fileUpload")## File upload
+      <el-form-item label="${comment}" prop="${javaField}">
+        <UploadFile v-model="formData.${javaField}" />
+      </el-form-item>
+        #elseif($column.htmlType == "editor")## Text Editor
+      <el-form-item label="${comment}" prop="${javaField}">
+        <Editor v-model="formData.${javaField}" height="150px" />
+      </el-form-item>
+        #elseif($column.htmlType == "select")## Drop-down box
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-select v-model="formData.${javaField}" placeholder="Please select${comment}">
+                #if ("" != $dictType)## With data dictionary
+          <el-option
+            v-for="dict in $dictMethod(DICT_TYPE.$dictType.toUpperCase())"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+                #else##No data dictionary
+          <el-option label="Please select dictionary generation" value="" />
+                #end
+        </el-select>
+      </el-form-item>
+        #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-checkbox-group v-model="formData.${javaField}">
+                #if ("" != $dictType)## With data dictionary
+          <el-checkbox
+            v-for="dict in $dictMethod(DICT_TYPE.$dictType.toUpperCase())"
+            :key="dict.value"
+            :label="dict.value"
+          >
+            {{ dict.label }}
+          </el-checkbox>
+                #else##No data dictionary
+          <el-checkbox>Please select dictionary to generate</el-checkbox>
+                #end
+        </el-checkbox-group>
+      </el-form-item>
+        #elseif($column.htmlType == "radio")## Radio box
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-radio-group v-model="formData.${javaField}">
+                #if ("" != $dictType)## With data dictionary
+          <el-radio
+            v-for="dict in $dictMethod(DICT_TYPE.$dictType.toUpperCase())"
+            :key="dict.value"
+            :label="dict.value"
+          >
+            {{ dict.label }}
+          </el-radio>
+                #else##No data dictionary
+          <el-radio label="1">Please select dictionary to generate</el-radio>
+                #end
+        </el-radio-group>
+      </el-form-item>
+        #elseif($column.htmlType == "datetime")## Time frame
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-date-picker
+          v-model="formData.${javaField}"
+          type="date"
+          value-format="x"
+          placeholder="Select${comment}"
+        />
+      </el-form-item>
+        #elseif($column.htmlType == "textarea")## Text box
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-input v-model="formData.${javaField}" type="textarea" placeholder="Please enter${comment}" />
+      </el-form-item>
+        #end
+    #end
+#end
+    </el-form>
+    <template #footer>
+      <el-button @click="submitForm" type="primary" :disabled="formLoading">Yes Set</el-button>
+      <el-button @click="dialogVisible = false">Take Disappear</el-button>
+    </template>
+  </Dialog>
+</template>
+<script setup lang="ts">
+import { getIntDictOptions, getStrDictOptions, getBoolDictOptions, DICT_TYPE } from '@/utils/dict'
+import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}'
+
+const { t } = useI18n() // Internationalization
+const message = useMessage() // Message pop-up window
+
+const dialogVisible = ref(false) // Whether to display the pop-up window
+const dialogTitle = ref('') // Popup window title
+const formLoading = ref(false) // The form is loading：1）Data loading during modification；2）Submit button disabled
+const formType = ref('') // Form type：create - Newly added；update - Modify
+const formData = ref({
+#foreach ($column in $subColumns)
+    #if ($column.createOperation || $column.updateOperation)
+      #if ($column.htmlType == "checkbox")
+  $column.javaField: [],
+      #else
+  $column.javaField: undefined,
+      #end
+    #end
+#end
+})
+const formRules = reactive({
+#foreach ($column in $subColumns)
+    #if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+        #set($comment=$column.columnComment)
+  $column.javaField: [{ required: true, message: '${comment}Cannot be empty', trigger: #if($column.htmlType == 'select')'change'#else'blur'#end }],
+    #end
+#end
+})
+const formRef = ref() // Form Ref
+
+/** Open pop-up window */
+const open = async (type: string, id?: number, ${subJoinColumn.javaField}: number) => {
+  dialogVisible.value = true
+  dialogTitle.value = t('action.' + type)
+  formType.value = type
+  resetForm()
+  formData.value.${subJoinColumn.javaField} = ${subJoinColumn.javaField}
+  // When modifying，Set data
+  if (id) {
+    formLoading.value = true
+    try {
+      formData.value = await ${simpleClassName}Api.get${subSimpleClassName}(id)
+    } finally {
+      formLoading.value = false
+    }
+  }
+}
+defineExpose({ open }) // Provide open Method，Used to open a pop-up window
+
+/** Submit form */
+const emit = defineEmits(['success']) // Definition success Event，Callback used after successful operation
+const submitForm = async () => {
+  // Verify form
+  await formRef.value.validate()
+  // Submit request
+  formLoading.value = true
+  try {
+    const data = formData.value
+    if (formType.value === 'create') {
+      await ${simpleClassName}Api.create${subSimpleClassName}(data)
+      message.success(t('common.createSuccess'))
+    } else {
+      await ${simpleClassName}Api.update${subSimpleClassName}(data)
+      message.success(t('common.updateSuccess'))
+    }
+    dialogVisible.value = false
+    // Send operation success event
+    emit('success')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+/** Reset form */
+const resetForm = () => {
+  formData.value = {
+#foreach ($column in $subColumns)
+  #if ($column.createOperation || $column.updateOperation)
+      #if ($column.htmlType == "checkbox")
+    $column.javaField: [],
+      #else
+    $column.javaField: undefined,
+      #end
+  #end
+#end
+  }
+  formRef.value?.resetFields()
+}
+</script>

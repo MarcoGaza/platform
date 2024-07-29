@@ -1,0 +1,54 @@
+package ${basePackage}.module.${table.moduleName}.controller.${sceneEnum.basePackage}.${table.businessName}.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import java.util.*;
+## Processing BigDecimal Introduction of fields
+import java.util.*;
+#foreach ($column in $columns)
+#if (${column.javaType} == "BigDecimal")
+import java.math.BigDecimal;
+#break
+#end
+#end
+## Processing LocalDateTime Introduction of fields
+#foreach ($column in $columns)
+#if (${column.listOperationResult} && ${column.javaType} == "LocalDateTime")
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
+#break
+#end
+#end
+## Processing Excel Export
+import com.alibaba.excel.annotation.*;
+#foreach ($column in $columns)
+#if ("$!column.dictType" != "")## Data dictionary is set
+import ${DictFormatClassName};
+import ${DictConvertClassName};
+#break
+#end
+#end
+
+@Schema(description = "${sceneEnum.name} - ${table.classComment} Response VO")
+@Data
+@ExcelIgnoreUnannotated
+public class ${sceneEnum.prefixClass}${table.className}RespVO {
+
+## Process fields one by one
+#foreach ($column in $columns)
+#if (${column.listOperationResult})
+## 1. Processing Swagger Annotation
+    @Schema(description = "${column.columnComment}"#if (!${column.nullable}), requiredMode = Schema.RequiredMode.REQUIRED#end#if ("$!column.example" != ""), example = "${column.example}"#end)
+## 2. Processing Excel Export
+#if ("$!column.dictType" != "")##Processing enumeration values
+    @ExcelProperty(value = "${column.columnComment}", converter = DictConvert.class)
+    @DictFormat("${column.dictType}") // TODO Code optimization：It is recommended to set it to the corresponding setting DictTypeConstants In enumeration class
+#else
+    @ExcelProperty("${column.columnComment}")
+#end
+## 3. Processing field definitions
+    private ${column.javaType} ${column.javaField};
+
+#end
+#end
+}

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>blossom-framework</artifactId>
+        <groupId>cn.econets.boot</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>blossom-spring-boot-starter-test</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        Test component，For unit testing、Integration test
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-spring-boot-starter-redis</artifactId>
+        </dependency>
+
+        <!-- Test Test related -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId> <!-- Unit Test，We adopt H2 As a database -->
+            <artifactId>h2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.fppt</groupId> <!-- Unit Test，We use embedded Redis Database -->
+            <artifactId>jedis-mock</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>uk.co.jemos.podam</groupId> <!-- Unit Test，Randomly generated POJO Class -->
+            <artifactId>podam</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>

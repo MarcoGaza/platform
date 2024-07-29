@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.econets.blossom.module.statistics.dal.mysql.product.ProductStatisticsMapper">
+
+    <select id="selectStatisticsResultPageByTimeBetween"
+            resultType="cn.econets.blossom.module.statistics.dal.dataobject.product.ProductStatisticsDO">
+        SELECT spu.id                                                       AS spuId
+             -- Views：A user can have multiple times
+             , (SELECT COUNT(1)
+                FROM product_browse_history
+                WHERE spu_id = spu.id
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS browse_count
+             -- Number of visitors：Count by user
+             , (SELECT COUNT(DISTINCT user_id)
+                FROM product_browse_history
+                WHERE spu_id = spu.id
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS browse_user_count
+             -- Number of favorites：Count by user
+             , (SELECT COUNT(DISTINCT user_id)
+                FROM product_favorite
+                WHERE spu_id = spu.id
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS favorite_count
+             -- Add to purchase quantity：Count by user
+             , (SELECT COUNT(DISTINCT user_id)
+                FROM trade_cart
+                WHERE spu_id = spu.id
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS cart_count
+             -- Number of items ordered
+             , (SELECT IFNULL(SUM(count), 0)
+                FROM trade_order_item
+                WHERE spu_id = spu.id
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS order_count
+             -- Number of payments
+             , (SELECT IFNULL(SUM(item.count), 0)
+                FROM trade_order_item item
+                         JOIN trade_order o ON item.order_id = o.id
+                WHERE spu_id = spu.id
+                  AND o.pay_status = TRUE
+                  AND item.create_time BETWEEN #{beginTime} AND #{endTime}) AS order_pay_count
+             -- Payment amount
+             , (SELECT IFNULL(SUM(item.pay_price), 0)
+                FROM trade_order_item item
+                         JOIN trade_order o ON item.order_id = o.id
+                WHERE spu_id = spu.id
+                  AND o.pay_status = TRUE
+                  AND item.create_time BETWEEN #{beginTime} AND #{endTime}) AS order_pay_price
+             -- Number of refunds
+             , (SELECT IFNULL(SUM(count), 0)
+                FROM trade_after_sale
+                WHERE spu_id = spu.id
+                  AND refund_time IS NOT NULL
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS after_sale_count
+             -- Refund amount
+             , (SELECT IFNULL(SUM(refund_price), 0)
+                FROM trade_after_sale
+                WHERE spu_id = spu.id
+                  AND refund_time IS NOT NULL
+                  AND create_time BETWEEN #{beginTime} AND #{endTime})      AS after_sale_refund_price
+        FROM product_spu spu
+        WHERE spu.deleted = FALSE
+        ORDER BY spu.id
+    </select>
+
+</mapper>

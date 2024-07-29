@@ -1,0 +1,5 @@
+### Request /mp/message/page Interface => Success
+GET {{baseUrl}}/mp/auto-reply/page?accountId=1&pageNo=1&pageSize=10
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}

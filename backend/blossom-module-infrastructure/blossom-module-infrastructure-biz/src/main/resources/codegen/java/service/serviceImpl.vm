@@ -1,0 +1,350 @@
+package ${basePackage}.module.${table.moduleName}.service.${table.businessName};
+
+import org.springframework.stereotype.Service;
+import ${jakartaPackage}.annotation.Resource;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import ${basePackage}.module.${table.moduleName}.controller.${sceneEnum.basePackage}.${table.businessName}.vo.*;
+import ${basePackage}.module.${table.moduleName}.dal.dataobject.${table.businessName}.${table.className}DO;
+## Special：Master and sub-table exclusive logic
+#foreach ($subTable in $subTables)
+import ${basePackage}.module.${subTable.moduleName}.dal.dataobject.${subTable.businessName}.${subTable.className}DO;
+#end
+import ${PageResultClassName};
+import ${PageParamClassName};
+import ${BeanUtils};
+
+import ${basePackage}.module.${table.moduleName}.dal.mysql.${table.businessName}.${table.className}Mapper;
+## Special：Master and sub-table exclusive logic
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+import ${basePackage}.module.${subTable.moduleName}.dal.mysql.${subTable.businessName}.${subTable.className}Mapper;
+#end
+
+import static ${ServiceExceptionUtilClassName}.exception;
+import static ${basePackage}.module.${table.moduleName}.enums.ErrorCodeConstants.*;
+
+/**
+ * ${table.classComment} Service Implementation class
+ *
+ * @author ${table.author}
+ */
+@Service
+@Validated
+public class ${table.className}ServiceImpl implements ${table.className}Service {
+
+    @Resource
+    private ${table.className}Mapper ${classNameVar}Mapper;
+## Special：Master and sub-table exclusive logic
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+    @Resource
+    private ${subTable.className}Mapper ${subClassNameVars.get($index)}Mapper;
+#end
+
+    @Override
+## Special：Master and Sub-table Exclusive Logic（Non ERP Mode）
+#if ( $subTables && $subTables.size() > 0 && $table.templateType != 11 )
+    @Transactional(rollbackFor = Exception.class)
+#end
+    public ${primaryColumn.javaType} create${simpleClassName}(${sceneEnum.prefixClass}${table.className}SaveReqVO createReqVO) {
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+#set ($TreeParentJavaField = $treeParentColumn.javaField.substring(0,1).toUpperCase() + ${treeParentColumn.javaField.substring(1)})##Capitalize the first letter
+#set ($TreeNameJavaField = $treeNameColumn.javaField.substring(0,1).toUpperCase() + ${treeNameColumn.javaField.substring(1)})##Capitalize the first letter
+        // Verification${treeParentColumn.columnComment}Validity
+        validateParent${simpleClassName}(null, createReqVO.get${TreeParentJavaField}());
+        // Verification${treeNameColumn.columnComment}Uniqueness
+        validate${simpleClassName}${TreeNameJavaField}Unique(null, createReqVO.get${TreeParentJavaField}(), createReqVO.get${TreeNameJavaField}());
+
+#end
+        // Insert
+        ${table.className}DO ${classNameVar} = BeanUtils.toBean(createReqVO, ${table.className}DO.class);
+        ${classNameVar}Mapper.insert(${classNameVar});
+## Special：Master and sub-table exclusive logic（Non ERP Mode）
+#if ( $subTables && $subTables.size() > 0 && $table.templateType != 11 )
+
+        // Insert subtable
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+#set ($subSimpleClassName = $subSimpleClassNames.get($index))
+#set ($subJoinColumn = $subJoinColumns.get($index))##Current join Field
+#set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+    #if ( $subTable.subJoinMany)
+        create${subSimpleClassName}List(${classNameVar}.getId(), createReqVO.get${subSimpleClassNames.get($index)}s());
+    #else
+        create${subSimpleClassName}(${classNameVar}.getId(), createReqVO.get${subSimpleClassNames.get($index)}());
+    #end
+#end
+#end
+        // Return
+        return ${classNameVar}.getId();
+    }
+
+    @Override
+## Special：Master and sub-table exclusive logic（Non ERP Mode）
+#if ( $subTables && $subTables.size() > 0 && $table.templateType != 11 )
+    @Transactional(rollbackFor = Exception.class)
+#end
+    public void update${simpleClassName}(${sceneEnum.prefixClass}${table.className}SaveReqVO updateReqVO) {
+        // Check existence
+        validate${simpleClassName}Exists(updateReqVO.getId());
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+#set ($TreeParentJavaField = $treeParentColumn.javaField.substring(0,1).toUpperCase() + ${treeParentColumn.javaField.substring(1)})##Capitalize the first letter
+#set ($TreeNameJavaField = $treeNameColumn.javaField.substring(0,1).toUpperCase() + ${treeNameColumn.javaField.substring(1)})##Capitalize the first letter
+        // Verification${treeParentColumn.columnComment}Validity
+        validateParent${simpleClassName}(updateReqVO.getId(), updateReqVO.get${TreeParentJavaField}());
+        // Verification${treeNameColumn.columnComment}Uniqueness
+        validate${simpleClassName}${TreeNameJavaField}Unique(updateReqVO.getId(), updateReqVO.get${TreeParentJavaField}(), updateReqVO.get${TreeNameJavaField}());
+
+#end
+        // Update
+        ${table.className}DO updateObj = BeanUtils.toBean(updateReqVO, ${table.className}DO.class);
+        ${classNameVar}Mapper.updateById(updateObj);
+## Special：Master and sub-table exclusive logic（Non ERP Mode）
+#if ( $subTables && $subTables.size() > 0 && $table.templateType != 11)
+
+        // Update subtable
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+#set ($subSimpleClassName = $subSimpleClassNames.get($index))
+#set ($subJoinColumn = $subJoinColumns.get($index))##Current join Field
+#set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+    #if ( $subTable.subJoinMany)
+        update${subSimpleClassName}List(updateReqVO.getId(), updateReqVO.get${subSimpleClassNames.get($index)}s());
+    #else
+        update${subSimpleClassName}(updateReqVO.getId(), updateReqVO.get${subSimpleClassNames.get($index)}());
+    #end
+#end
+#end
+    }
+
+    @Override
+## Special：Master and sub-table exclusive logic
+#if ( $subTables && $subTables.size() > 0)
+    @Transactional(rollbackFor = Exception.class)
+#end
+    public void delete${simpleClassName}(${primaryColumn.javaType} id) {
+        // Check existence
+        validate${simpleClassName}Exists(id);
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+#set ($ParentJavaField = $treeParentColumn.javaField.substring(0,1).toUpperCase() + ${treeParentColumn.javaField.substring(1)})##Capitalize the first letter
+        // Check whether there is a child${table.classComment}
+        if (${classNameVar}Mapper.selectCountBy${ParentJavaField}(id) > 0) {
+            throw exception(${simpleClassName_underlineCase.toUpperCase()}_EXITS_CHILDREN);
+        }
+#end
+        // Delete
+        ${classNameVar}Mapper.deleteById(id);
+## Special：Master and sub-table exclusive logic
+#if ( $subTables && $subTables.size() > 0)
+
+        // Delete subtable
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+#set ($subSimpleClassName = $subSimpleClassNames.get($index))
+#set ($subJoinColumn = $subJoinColumns.get($index))##Current join Field
+#set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+        delete${subSimpleClassName}By${SubJoinColumnName}(id);
+#end
+#end
+    }
+
+    private void validate${simpleClassName}Exists(${primaryColumn.javaType} id) {
+        if (${classNameVar}Mapper.selectById(id) == null) {
+            throw exception(${simpleClassName_underlineCase.toUpperCase()}_NOT_EXISTS);
+        }
+    }
+
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+#set ($TreeParentJavaField = $treeParentColumn.javaField.substring(0,1).toUpperCase() + ${treeParentColumn.javaField.substring(1)})##Capitalize the first letter
+#set ($TreeNameJavaField = $treeNameColumn.javaField.substring(0,1).toUpperCase() + ${treeNameColumn.javaField.substring(1)})##Capitalize the first letter
+    private void validateParent${simpleClassName}(Long id, Long ${treeParentColumn.javaField}) {
+        if (${treeParentColumn.javaField} == null || ${simpleClassName}DO.${treeParentColumn_javaField_underlineCase.toUpperCase()}_ROOT.equals(${treeParentColumn.javaField})) {
+            return;
+        }
+        // 1. Cannot set itself as parent${table.classComment}
+        if (Objects.equals(id, ${treeParentColumn.javaField})) {
+            throw exception(${simpleClassName_underlineCase.toUpperCase()}_PARENT_ERROR);
+        }
+        // 2. Father${table.classComment}Does not exist
+        ${simpleClassName}DO parent${simpleClassName} = ${classNameVar}Mapper.selectById(${treeParentColumn.javaField});
+        if (parent${simpleClassName} == null) {
+            throw exception(${simpleClassName_underlineCase.toUpperCase()}_PARENT_NOT_EXITS);
+        }
+        // 3. Recursive verification of parent${table.classComment}，If the father${table.classComment}It's my own son${table.classComment}，An error is reported，Avoid loops
+        if (id == null) { // id Empty，Additional description，No need to consider loops
+            return;
+        }
+        for (int i = 0; i < Short.MAX_VALUE; i++) {
+            // 3.1 Verification loop
+            ${treeParentColumn.javaField} = parent${simpleClassName}.get${TreeParentJavaField}();
+            if (Objects.equals(id, ${treeParentColumn.javaField})) {
+                throw exception(${simpleClassName_underlineCase.toUpperCase()}_PARENT_IS_CHILD);
+            }
+            // 3.2 Continue recursively to the next level parent${table.classComment}
+            if (${treeParentColumn.javaField} == null || ${simpleClassName}DO.${treeParentColumn_javaField_underlineCase.toUpperCase()}_ROOT.equals(${treeParentColumn.javaField})) {
+                break;
+            }
+            parent${simpleClassName} = ${classNameVar}Mapper.selectById(${treeParentColumn.javaField});
+            if (parent${simpleClassName} == null) {
+                break;
+            }
+        }
+    }
+
+    private void validate${simpleClassName}${TreeNameJavaField}Unique(Long id, Long ${treeParentColumn.javaField}, String ${treeNameColumn.javaField}) {
+        ${simpleClassName}DO ${classNameVar} = ${classNameVar}Mapper.selectBy${TreeParentJavaField}And${TreeNameJavaField}(${treeParentColumn.javaField}, ${treeNameColumn.javaField});
+        if (${classNameVar} == null) {
+            return;
+        }
+        // If id Empty，Indicates that there is no need to compare whether they are the same id of${table.classComment}
+        if (id == null) {
+            throw exception(${simpleClassName_underlineCase.toUpperCase()}_${treeNameColumn_javaField_underlineCase.toUpperCase()}_DUPLICATE);
+        }
+        if (!Objects.equals(${classNameVar}.getId(), id)) {
+            throw exception(${simpleClassName_underlineCase.toUpperCase()}_${treeNameColumn_javaField_underlineCase.toUpperCase()}_DUPLICATE);
+        }
+    }
+
+#end
+    @Override
+    public ${table.className}DO get${simpleClassName}(${primaryColumn.javaType} id) {
+        return ${classNameVar}Mapper.selectById(id);
+    }
+
+## Special：Tree table exclusive logic（Trees do not need paging interfaces）
+#if ( $table.templateType != 2 )
+    @Override
+    public PageResult<${table.className}DO> get${simpleClassName}Page(${sceneEnum.prefixClass}${table.className}PageReqVO pageReqVO) {
+        return ${classNameVar}Mapper.selectPage(pageReqVO);
+    }
+#else
+    @Override
+    public List<${table.className}DO> get${simpleClassName}List(${sceneEnum.prefixClass}${table.className}ListReqVO listReqVO) {
+        return ${classNameVar}Mapper.selectList(listReqVO);
+    }
+#end
+
+## Special：Master and sub-table exclusive logic
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+#set ($subSimpleClassName = $subSimpleClassNames.get($index))
+#set ($simpleClassNameUnderlineCase = $simpleClassNameUnderlineCases.get($index))
+#set ($subPrimaryColumn = $subPrimaryColumns.get($index))##Current primary Field
+#set ($subJoinColumn = $subJoinColumns.get($index))##Current join Field
+#set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+#set ($subClassNameVar = $subClassNameVars.get($index))
+    // ==================== Subtable（$subTable.classComment） ====================
+
+## Situation 1：MASTER_ERP Time，Need to query the sub-tables
+#if ( $table.templateType == 11 )
+    @Override
+    public PageResult<${subTable.className}DO> get${subSimpleClassName}Page(PageParam pageReqVO, ${subJoinColumn.javaType} ${subJoinColumn.javaField}) {
+        return ${subClassNameVars.get($index)}Mapper.selectPage(pageReqVO, ${subJoinColumn.javaField});
+    }
+
+## Situation 2：Non MASTER_ERP Time，Need to list and query subtables
+#else
+    #if ( $subTable.subJoinMany )
+    @Override
+    public List<${subTable.className}DO> get${subSimpleClassName}ListBy${SubJoinColumnName}(${subJoinColumn.javaType} ${subJoinColumn.javaField}) {
+        return ${subClassNameVars.get($index)}Mapper.selectListBy${SubJoinColumnName}(${subJoinColumn.javaField});
+    }
+
+    #else
+    @Override
+    public ${subTable.className}DO get${subSimpleClassName}By${SubJoinColumnName}(${subJoinColumn.javaType} ${subJoinColumn.javaField}) {
+        return ${subClassNameVars.get($index)}Mapper.selectBy${SubJoinColumnName}(${subJoinColumn.javaField});
+    }
+
+    #end
+#end
+## Situation 1：MASTER_ERP Time，Supports single addition、Modify、Delete operation
+#if ( $table.templateType == 11 )
+    @Override
+    public ${subPrimaryColumn.javaType} create${subSimpleClassName}(${subTable.className}DO ${subClassNameVar}) {
+## Special：One-on-one，It is necessary to ensure that there is only one，Cannot insert repeatedly
+#if ( !$subTable.subJoinMany)
+        // Check if it already exists
+        if (${subClassNameVars.get($index)}Mapper.selectBy${SubJoinColumnName}(${subClassNameVar}.get${SubJoinColumnName}()) != null) {
+            throw exception(${simpleClassNameUnderlineCase.toUpperCase()}_EXISTS);
+        }
+        // Insert
+#end
+        ${subClassNameVars.get($index)}Mapper.insert(${subClassNameVar});
+        return ${subClassNameVar}.getId();
+    }
+
+    @Override
+    public void update${subSimpleClassName}(${subTable.className}DO ${subClassNameVar}) {
+        // Check existence
+        validate${subSimpleClassName}Exists(${subClassNameVar}.getId());
+        // Update
+        ${subClassNameVars.get($index)}Mapper.updateById(${subClassNameVar});
+    }
+
+    @Override
+    public void delete${subSimpleClassName}(${subPrimaryColumn.javaType} id) {
+        // Check existence
+        validate${subSimpleClassName}Exists(id);
+        // Delete
+        ${subClassNameVars.get($index)}Mapper.deleteById(id);
+    }
+
+    @Override
+    public ${subTable.className}DO get${subSimpleClassName}(${subPrimaryColumn.javaType} id) {
+        return ${subClassNameVars.get($index)}Mapper.selectById(id);
+    }
+
+    private void validate${subSimpleClassName}Exists(${subPrimaryColumn.javaType} id) {
+        if (${subClassNameVar}Mapper.selectById(id) == null) {
+            throw exception(${simpleClassNameUnderlineCase.toUpperCase()}_NOT_EXISTS);
+        }
+    }
+
+## Situation 2：Non MASTER_ERP Time，Support batch addition、Modify operation
+#else
+    #if ( $subTable.subJoinMany)
+    private void create${subSimpleClassName}List(${primaryColumn.javaType} ${subJoinColumn.javaField}, List<${subTable.className}DO> list) {
+        list.forEach(o -> o.set$SubJoinColumnName(${subJoinColumn.javaField}));
+        ${subClassNameVars.get($index)}Mapper.insertBatch(list);
+    }
+
+    private void update${subSimpleClassName}List(${primaryColumn.javaType} ${subJoinColumn.javaField}, List<${subTable.className}DO> list) {
+        delete${subSimpleClassName}By${SubJoinColumnName}(${subJoinColumn.javaField});
+		list.forEach(o -> o.setId(null).setUpdater(null).setUpdateTime(null)); // Solve the update situation：1）id Conflict；2）updateTime Do not update
+        create${subSimpleClassName}List(${subJoinColumn.javaField}, list);
+    }
+
+    #else
+    private void create${subSimpleClassName}(${primaryColumn.javaType} ${subJoinColumn.javaField}, ${subTable.className}DO ${subClassNameVar}) {
+        if (${subClassNameVar} == null) {
+            return;
+        }
+        ${subClassNameVar}.set$SubJoinColumnName(${subJoinColumn.javaField});
+        ${subClassNameVars.get($index)}Mapper.insert(${subClassNameVar});
+    }
+
+    private void update${subSimpleClassName}(${primaryColumn.javaType} ${subJoinColumn.javaField}, ${subTable.className}DO ${subClassNameVar}) {
+        if (${subClassNameVar} == null) {
+			return;
+        }
+        ${subClassNameVar}.set$SubJoinColumnName(${subJoinColumn.javaField});
+        ${subClassNameVar}.setUpdater(null).setUpdateTime(null); // Solve the update situation：updateTime Do not update
+        ${subClassNameVars.get($index)}Mapper.insertOrUpdate(${subClassNameVar});
+    }
+
+    #end
+#end
+    private void delete${subSimpleClassName}By${SubJoinColumnName}(${primaryColumn.javaType} ${subJoinColumn.javaField}) {
+        ${subClassNameVars.get($index)}Mapper.deleteBy${SubJoinColumnName}(${subJoinColumn.javaField});
+    }
+
+#end
+}

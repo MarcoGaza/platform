@@ -1,0 +1,236 @@
+import type {BasicColumn, FormSchema} from '@/components/Table'
+import {useRender} from '@/components/Table'
+import {DICT_TYPE, getDictOptions} from '@/utils/dict'
+
+export const columns: BasicColumn[] = [
+#foreach($column in $columns)
+#if ($column.listOperationResult)
+  #set ($dictType=$column.dictType)
+  #set ($javaField = $column.javaField)
+  #set ($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+  #set ($comment=$column.columnComment)
+#if ($column.javaType == "LocalDateTime")## Time type
+  {
+    title: '${comment}',
+    dataIndex: '${javaField}',
+    width: 180,
+    customRender: ({ text }) => {
+      return useRender.renderDate(text)
+    },
+  },
+#elseif("" != $column.dictType)## Data dictionary
+  {
+    title: '${comment}',
+    dataIndex: '${javaField}',
+    width: 180,
+    customRender: ({ text }) => {
+      return useRender.renderDict(text, DICT_TYPE.$dictType.toUpperCase())
+    },
+  },
+#else
+  {
+    title: '${comment}',
+    dataIndex: '${javaField}',
+    width: 160,
+  },
+#end
+#end
+#end
+]
+
+export const searchFormSchema: FormSchema[] = [
+#foreach($column in $columns)
+#if ($column.listOperation)
+  #set ($dictType=$column.dictType)
+  #set ($javaField = $column.javaField)
+  #set ($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+  #set ($comment=$column.columnComment)
+  {
+    label: '${comment}',
+    field: '${javaField}',
+  #if ($column.htmlType == "input")
+    component: 'Input',
+  #elseif ($column.htmlType == "select")
+    component: 'Select',
+    componentProps: {
+      #if ("" != $dictType)## Set dictType Data dictionary status
+        options: getDictOptions(DICT_TYPE.$dictType.toUpperCase()),
+      #else## Not set dictType Data dictionary status
+        options: [],
+      #end
+    },
+  #elseif ($column.htmlType == "radio")
+    component: 'Radio',
+    componentProps: {
+      #if ("" != $dictType)## Set dictType Data dictionary status
+        options: getDictOptions(DICT_TYPE.$dictType.toUpperCase()),
+      #else## Not set dictType Data dictionary status
+        options: [],
+      #end
+    },
+  #elseif($column.htmlType == "datetime")
+    component: 'RangePicker',
+    #end
+    colProps: { span: 8 },
+  },
+#end
+#end
+]
+
+export const createFormSchema: FormSchema[] = [
+  {
+    label: 'Number',
+    field: 'id',
+    show: false,
+    component: 'Input',
+  },
+#foreach($column in $columns)
+#if ($column.createOperation)
+  #set ($dictType = $column.dictType)
+  #set ($javaField = $column.javaField)
+  #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+  #set ($comment = $column.columnComment)
+#if (!$column.primaryKey)## Ignore primary key，Not in the form
+  {
+    label: '${comment}',
+    field: '${javaField}',
+  #if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+    required: true,
+    #end
+  #if ($column.htmlType == "input")
+    component: 'Input',
+  #elseif($column.htmlType == "imageUpload")## Upload pictures
+    component: 'FileUpload',
+    componentProps: {
+      fileType: 'image',
+      maxCount: 1,
+    },
+  #elseif($column.htmlType == "fileUpload")## File upload
+    component: 'FileUpload',
+    componentProps: {
+      fileType: 'file',
+      maxCount: 1,
+    },
+  #elseif($column.htmlType == "editor")## Text Editor
+    component: 'Editor',
+  #elseif($column.htmlType == "select")## Drop-down box
+    component: 'Select',
+    componentProps: {
+      #if ("" != $dictType)## With data dictionary
+        options: getDictOptions(DICT_TYPE.$dictType.toUpperCase(), 'number'),
+      #else##No data dictionary
+        options:[],
+      #end
+    },
+  #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+    component: 'Checkbox',
+    componentProps: {
+      #if ("" != $dictType)## With data dictionary
+        options: getDictOptions(DICT_TYPE.$dictType.toUpperCase(), 'number'),
+      #else##No data dictionary
+        options:[],
+      #end
+    },
+  #elseif($column.htmlType == "radio")## Radio box
+    component: 'RadioButtonGroup',
+    componentProps: {
+      #if ("" != $dictType)## With data dictionary
+        options: getDictOptions(DICT_TYPE.$dictType.toUpperCase(), 'number'),
+      #else##No data dictionary
+        options:[],
+      #end
+    },
+  #elseif($column.htmlType == "datetime")## Time frame
+    component: 'DatePicker',
+    componentProps: {
+      showTime: true,
+      format: 'YYYY-MM-DD HH:mm:ss',
+      valueFormat: 'x',
+    },
+  #elseif($column.htmlType == "textarea")## Text field
+    component: 'InputTextArea',
+  #end
+  },
+#end
+#end
+#end
+]
+
+export const updateFormSchema: FormSchema[] = [
+  {
+    label: 'Number',
+    field: 'id',
+    show: false,
+    component: 'Input',
+  },
+#foreach($column in $columns)
+#if ($column.updateOperation)
+#set ($dictType = $column.dictType)
+#set ($javaField = $column.javaField)
+#set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#set ($comment = $column.columnComment)
+  #if (!$column.primaryKey)## Ignore primary key，Not in the form
+  {
+    label: '${comment}',
+    field: '${javaField}',
+    #if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+    required: true,
+    #end
+    #if ($column.htmlType == "input")
+    component: 'Input',
+    #elseif($column.htmlType == "imageUpload")## Upload pictures
+    component: 'FileUpload',
+    componentProps: {
+      fileType: 'image',
+      maxCount: 1,
+    },
+    #elseif($column.htmlType == "fileUpload")## File upload
+    component: 'FileUpload',
+    componentProps: {
+      fileType: 'file',
+      maxCount: 1,
+    },
+    #elseif($column.htmlType == "editor")## Text Editor
+    component: 'Editor',
+    #elseif($column.htmlType == "select")## Drop-down box
+    component: 'Select',
+    componentProps: {
+      #if ("" != $dictType)## With data dictionary
+      options: getDictOptions(DICT_TYPE.$dictType.toUpperCase(), 'number'),
+      #else##No data dictionary
+      options:[],
+      #end
+    },
+    #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+    component: 'Checkbox',
+    componentProps: {
+      #if ("" != $dictType)## With data dictionary
+      options: getDictOptions(DICT_TYPE.$dictType.toUpperCase(), 'number'),
+      #else##No data dictionary
+      options:[],
+      #end
+    },
+    #elseif($column.htmlType == "radio")## Radio box
+    component: 'RadioButtonGroup',
+    componentProps: {
+      #if ("" != $dictType)## With data dictionary
+      options: getDictOptions(DICT_TYPE.$dictType.toUpperCase(), 'number'),
+      #else##No data dictionary
+      options:[],
+      #end
+    },
+    #elseif($column.htmlType == "datetime")## Time frame
+    component: 'DatePicker',
+    componentProps: {
+      showTime: true,
+      format: 'YYYY-MM-DD HH:mm:ss',
+      valueFormat: 'x',
+    },
+    #elseif($column.htmlType == "textarea")## Text field
+    component: 'InputTextArea',
+    #end
+  },
+  #end
+#end
+#end
+]

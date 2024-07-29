@@ -1,0 +1,65 @@
+package ${basePackage}.module.${table.moduleName}.controller.${sceneEnum.basePackage}.${table.businessName}.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import java.util.*;
+import ${jakartaPackage}.validation.*;
+## Processing BigDecimal Introduction of fields
+import java.util.*;
+#foreach ($column in $columns)
+#if (${column.javaType} == "BigDecimal")
+import java.math.BigDecimal;
+#break
+#end
+#end
+## Processing LocalDateTime Introduction of fields
+#foreach ($column in $columns)
+#if ((${column.createOperation} || ${column.updateOperation}) && ${column.javaType} == "LocalDateTime")
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDateTime;
+#break
+#end
+#end
+## Special：Master and sub-table exclusive logic
+#foreach ($subTable in $subTables)
+import ${basePackage}.module.${subTable.moduleName}.dal.dataobject.${subTable.businessName}.${subTable.className}DO;
+#end
+
+@Schema(description = "${sceneEnum.name} - ${table.classComment}Newly added/Modify Request VO")
+@Data
+public class ${sceneEnum.prefixClass}${table.className}SaveReqVO {
+
+## Process fields one by one
+#foreach ($column in $columns)
+#if (${column.createOperation} || ${column.updateOperation})
+## 1. Processing Swagger Annotation
+    @Schema(description = "${column.columnComment}"#if (!${column.nullable}), requiredMode = Schema.RequiredMode.REQUIRED#end#if ("$!column.example" != ""), example = "${column.example}"#end)
+## 2. Processing Validator Parameter verification
+#if (!${column.nullable} && !${column.primaryKey})
+#if (${column.javaType} == 'String')
+    @NotEmpty(message = "${column.columnComment}Cannot be empty")
+#else
+    @NotNull(message = "${column.columnComment}Cannot be empty")
+#end
+#end
+## 3. Processing field definitions
+    private ${column.javaType} ${column.javaField};
+
+#end
+#end
+## Special：Master and sub-table exclusive logic（Non ERP Mode）
+#if ( $subTables && $subTables.size() > 0 && $table.templateType != 11 )
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+    #if ( $subTable.subJoinMany)
+    @Schema(description = "${subTable.classComment}List")
+    private List<${subTable.className}DO> ${subClassNameVars.get($index)}s;
+
+    #else
+    @Schema(description = "${subTable.classComment}")
+    private ${subTable.className}DO ${subClassNameVars.get($index)};
+
+    #end
+#end
+#end
+}

@@ -1,0 +1,54 @@
+### Request /mp/draft/page Interface => Success
+GET {{baseUrl}}/mp/draft/page?accountId=1&pageNo=1&pageSize=10
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Request /mp/draft/create Interface => Success
+POST {{baseUrl}}/mp/draft/create?accountId=1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "articles": [
+    {
+      "title": "I am the title",
+      "author": "I am the author",
+      "digest": "I am a summary",
+      "content": "I am the content",
+      "contentSourceUrl": "https://www.econets.cn",
+      "thumbMediaId": "r6ryvl6LrxBU0miaST4Y-pIcmK-zAAId-9TGgy-DrSLhjVuWbuT3ZBjk9K1yQ0Dn"
+    },
+    {
+      "title": "I am the title 2",
+      "author": "I am the author 2",
+      "digest": "I am the summary 2",
+      "content": "I am the content 2",
+      "contentSourceUrl": "https://www.econets.cn",
+      "thumbMediaId": "r6ryvl6LrxBU0miaST4Y-pIcmK-zAAId-9TGgy-DrSLhjVuWbuT3ZBjk9K1yQ0Dn"
+    }
+  ]
+}
+
+### Request /mp/draft/create Interface => Success
+PUT {{baseUrl}}/mp/draft/update?accountId=1&mediaId=r6ryvl6LrxBU0miaST4Y-q-G9pdsmZw0OYG4FzHQkKfpLfEwIH51wy2bxisx8PvW
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+[{
+    "title": "I am the title（OOO）",
+    "author": "I am the author",
+    "digest": "I am a summary",
+    "content": "I am the content",
+    "contentSourceUrl": "https://www.econets.cn",
+    "thumbMediaId": "r6ryvl6LrxBU0miaST4Y-pIcmK-zAAId-9TGgy-DrSLhjVuWbuT3ZBjk9K1yQ0Dn"
+}, {
+  "title": "I am the title（XXX）",
+  "author": "I am the author",
+  "digest": "I am a summary",
+  "content": "I am the content",
+  "contentSourceUrl": "https://www.econets.cn",
+  "thumbMediaId": "r6ryvl6LrxBU0miaST4Y-pIcmK-zAAId-9TGgy-DrSLhjVuWbuT3ZBjk9K1yQ0Dn"
+}]

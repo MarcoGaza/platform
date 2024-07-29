@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>blossom</artifactId>
+        <groupId>cn.econets.boot</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>blossom-module-infrastructure</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        infra Module, Mainly provides two capabilities:
+        1. We are responsible for the operation and management of infrastructure, Supporting the general and core business of the upper layer. For example: Management of scheduled tasks, Server information, etc.
+        2. RD Tools, Improve RD efficiency and quality. For example: Code generator, Interface documentation, etc.
+    </description>
+
+    <modules>
+        <module>blossom-module-infrastructure-api</module>
+        <module>blossom-module-infrastructure-biz</module>
+    </modules>
+
+</project>

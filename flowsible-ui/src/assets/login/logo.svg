@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 922 922" xml:space="preserve">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#cc4499;stop-opacity:1">
+        <animate attributeName="stop-color" values="#cc4499;#aa00ff;#663dff;#cc4499" dur="10s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="37%" style="stop-color:#aa00ff;stop-opacity:1">
+        <animate attributeName="stop-color" values="#aa00ff;#663dff;#cc4499;#aa00ff" dur="10s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" style="stop-color:#663dff;stop-opacity:1">
+        <animate attributeName="stop-color" values="#663dff;#cc4499;#aa00ff;#663dff" dur="10s" repeatCount="indefinite" />
+      </stop>
+    </linearGradient>
+  </defs>
+  <style>
+    .shadow { filter: drop-shadow(5px 5px 5px rgba(0, 0, 0, 0.5)); }
+  </style>
+  <rect x="0" y="0" width="100%" height="100%" fill="url(#grad1)" rx="50" ry="50"/>
+  <g transform="scale(0.9) translate(50,50)">
+    <path fill="white" d="M239.37 737.37 103.225 873.589v-759.66h759.241c-1.641 1.793-2.768 3.122-3.996 4.35-64.922 64.933-129.866 129.845-194.733 194.833-2.557 2.563-5.09 3.612-8.73 3.61-113.82-.095-227.639-.078-341.459-.078h-7.897v5.721c-.001 114.486-.022 228.973.083 343.459.004 3.848-1.172 6.474-3.847 9.127-20.83 20.648-41.528 41.429-62.517 62.419" class="shadow"/>
+    <path fill="white" d="m680.233 499.233-272.97 273.038V417.909h354.479z" class="shadow"/>
+    <path fill="white" d="M713.958 603.817c53.051 1.264 95.974 43.718 97.802 96.264 1.826 52.49-37.588 97.826-89.587 103.045-41.446 4.16-80.041-16.617-99.238-53.424-18.77-35.986-13.89-80.126 12.986-111.12 20.335-23.45 46.39-35.02 78.037-34.765" class="shadow"/>
+  </g>
+</svg>

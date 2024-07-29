@@ -1,0 +1,76 @@
+<configuration>
+    <!-- Quote Spring Boot of logback Basic Configuration -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <!-- Variable blossom.info.base-package，Basic Business Package -->
+    <springProperty scope="context" name="application.info.base-package" source="application.info.base-package"/>
+    <!-- Formatted output：%d Indicates date，%X{tid} SkWalking Link tracking number，%thread Indicates the thread name，%-5level：Levels are displayed from the left 5 Character width，%msg：Log message，%nis a line break character -->
+    <property name="PATTERN_DEFAULT" value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} | %highlight(${LOG_LEVEL_PATTERN:-%5p} ${PID:- }) | %boldYellow(%thread [%tid]) %boldGreen(%-40.40logger{39}) | %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+    <!-- Console Appender -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">　　　　　
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- File Appender -->
+    <!-- Reference Spring Boot of file-appender.xml Written -->
+    <appender name="FILE"  class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+        <!-- Log file name -->
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Log file name after rolling -->
+            <fileNamePattern>${LOGBACK_ROLLINGPOLICY_FILE_NAME_PATTERN:-${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz}</fileNamePattern>
+            <!-- When starting the service，Whether to clean up historical logs，Cleaning is generally not recommended -->
+            <cleanHistoryOnStart>${LOGBACK_ROLLINGPOLICY_CLEAN_HISTORY_ON_START:-false}</cleanHistoryOnStart>
+            <!-- Log file，How much capacity has been reached，Scroll -->
+            <maxFileSize>${LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE:-10MB}</maxFileSize>
+            <!-- Total size of log files，0 Indicates no restriction -->
+            <totalSizeCap>${LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP:-0}</totalSizeCap>
+            <!-- How many days to keep log files -->
+            <maxHistory>${LOGBACK_ROLLINGPOLICY_MAX_HISTORY:-30}</maxHistory>
+        </rollingPolicy>
+    </appender>
+    <!-- Write log asynchronously，Improve performance -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- Do not lose logs。Default，If the queue 80% Full,will be discarded TRACT、DEBUG、INFO Level log -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- Change the default queue depth，This value will affect performance。The default value is 256 -->
+        <queueSize>256</queueSize>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <!-- SkyWalking GRPC Log Collection，Realize the log center。Attention：SkyWalking 8.4.0 Version starts to support -->
+    <appender name="GRPC" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- Local Environment -->
+    <springProfile name="local">
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="GRPC"/> <!-- In local environment，If you do not want to access SkyWalking Log Service，You can comment out this line -->
+            <appender-ref ref="ASYNC"/>  <!-- In local environment，If you don't want to print logs，You can comment out this line -->
+        </root>
+    </springProfile>
+    <!-- Other environments -->
+    <springProfile name="dev,test,stage,prod,default">
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="ASYNC"/>
+            <appender-ref ref="GRPC"/>
+        </root>
+    </springProfile>
+
+</configuration>

@@ -1,0 +1,320 @@
+<template>
+  <div class="app-container">
+    <!-- Dialog box(Add / Modify) -->
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="45%" v-dialogDrag append-to-body>
+      <el-form ref="formRef" :model="formData" :rules="formRules" v-loading="formLoading" label-width="100px">
+          #foreach($column in $columns)
+              #if ($column.createOperation || $column.updateOperation)
+                  #set ($dictType = $column.dictType)
+                  #set ($javaField = $column.javaField)
+                  #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+                  #set ($comment = $column.columnComment)
+                  #if ( $table.templateType == 2 && $column.id == $treeParentColumn.id )
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <TreeSelect
+                        v-model="formData.${javaField}"
+                        :options="${classNameVar}Tree"
+                        :normalizer="normalizer"
+                        placeholder="Please select${comment}"
+                      />
+                    </el-form-item>
+                  #elseif ($column.htmlType == "input" && !$column.primaryKey)## Ignore primary key，Not in the form
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-input v-model="formData.${javaField}" placeholder="Please enter${comment}" />
+                    </el-form-item>
+                  #elseif($column.htmlType == "imageUpload")## Upload pictures
+                      #set ($hasImageUploadColumn = true)
+                    <el-form-item label="${comment}">
+                      <ImageUpload v-model="formData.${javaField}"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "fileUpload")## File upload
+                      #set ($hasFileUploadColumn = true)
+                    <el-form-item label="${comment}">
+                      <FileUpload v-model="formData.${javaField}"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "editor")## Text Editor
+                      #set ($hasEditorColumn = true)
+                    <el-form-item label="${comment}">
+                      <Editor v-model="formData.${javaField}" :min-height="192"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "select")## Drop-down box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-select v-model="formData.${javaField}" placeholder="Please select${comment}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-option v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                       :key="dict.value" :label="dict.label" #if ($column.javaType == "Integer" || $column.javaType == "Long"):value="parseInt(dict.value)"#else:value="dict.value"#end />
+                          #else##No data dictionary
+                            <el-option label="Please select dictionary generation" value="" />
+                          #end
+                      </el-select>
+                    </el-form-item>
+                  #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-checkbox-group v-model="formData.${javaField}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-checkbox v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                         :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"#else:label="dict.value"#end>{{dict.label}}</el-checkbox>
+                          #else##No data dictionary
+                            <el-checkbox>Please select dictionary generation</el-checkbox>
+                          #end
+                      </el-checkbox-group>
+                    </el-form-item>
+                  #elseif($column.htmlType == "radio")## Radio Box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-radio-group v-model="formData.${javaField}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-radio v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                      :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"
+                                      #else:label="dict.value"#end>{{dict.label}}</el-radio>
+                          #else##No data dictionary
+                            <el-radio label="1">Please select dictionary to generate</el-radio>
+                          #end
+                      </el-radio-group>
+                    </el-form-item>
+                  #elseif($column.htmlType == "datetime")## Time frame
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-date-picker clearable v-model="formData.${javaField}" type="date" value-format="timestamp" placeholder="Select${comment}" />
+                    </el-form-item>
+                  #elseif($column.htmlType == "textarea")## Text box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-input v-model="formData.${javaField}" type="textarea" placeholder="Please enter content" />
+                    </el-form-item>
+                  #end
+              #end
+          #end
+      </el-form>
+        ## Special：Master and sub-table exclusive logic
+        #if ( $table.templateType == 10 || $table.templateType == 12 )
+          <!-- Subtable form -->
+          <el-tabs v-model="subTabsName">
+              #foreach ($subTable in $subTables)
+                  #set ($index = $foreach.count - 1)
+                  #set ($subClassNameVar = $subClassNameVars.get($index))
+                  #set ($subSimpleClassName = $subSimpleClassNames.get($index))
+                  #set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+                <el-tab-pane label="${subTable.classComment}" name="$subClassNameVar">
+                  <${subSimpleClassName}Form ref="${subClassNameVar}FormRef" :${subJoinColumn_strikeCase}="formData.id" />
+                </el-tab-pane>
+              #end
+          </el-tabs>
+        #end
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm" :disabled="formLoading">Yes Set</el-button>
+        <el-button @click="dialogVisible = false">Take Disappear</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+  import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}';
+  #if ($hasImageUploadColumn)
+  import ImageUpload from '@/components/ImageUpload';
+  #end
+  #if ($hasFileUploadColumn)
+  import FileUpload from '@/components/FileUpload';
+  #end
+  #if ($hasEditorColumn)
+  import Editor from '@/components/Editor';
+  #end
+  ## Special：Tree table exclusive logic
+  #if ( $table.templateType == 2 )
+  import TreeSelect from "@riophae/vue-treeselect";
+  import "@riophae/vue-treeselect/dist/vue-treeselect.css";
+  #end
+  ## Special：Master and sub-table exclusive logic
+  #if ( $table.templateType == 10 || $table.templateType == 12 )
+      #foreach ($subSimpleClassName in $subSimpleClassNames)
+      import ${subSimpleClassName}Form from './components/${subSimpleClassName}Form.vue'
+      #end
+  #end
+  export default {
+    name: "${simpleClassName}Form",
+    components: {
+        #if ($hasImageUploadColumn)
+          ImageUpload,
+        #end
+        #if ($hasFileUploadColumn)
+          FileUpload,
+        #end
+        #if ($hasEditorColumn)
+          Editor,
+        #end
+        ## Special：Tree table exclusive logic
+        #if ( $table.templateType == 2 )
+          TreeSelect,
+        #end
+        ## Special：Master and sub-table exclusive logic
+        #if ( $table.templateType == 10 || $table.templateType == 12 )
+            #foreach ($subSimpleClassName in $subSimpleClassNames)
+               ${subSimpleClassName}Form,
+            #end
+        #end
+    },
+    data() {
+      return {
+        // Popup title
+        dialogTitle: "",
+        // Whether to display the pop-up layer
+        dialogVisible: false,
+        // The form is loading：1）Data loading during modification；2）Submit button disabled
+        formLoading: false,
+        // Form parameters
+        formData: {
+            #foreach ($column in $columns)
+                #if ($column.createOperation || $column.updateOperation)
+                    #if ($column.htmlType == "checkbox")
+                            $column.javaField: [],
+                    #else
+                            $column.javaField: undefined,
+                    #end
+                #end
+            #end
+        },
+        // Form validation
+        formRules: {
+            #foreach ($column in $columns)
+                #if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+                    #set($comment=$column.columnComment)
+                        $column.javaField: [{ required: true, message: '${comment}Cannot be empty', trigger: #if($column.htmlType == 'select')'change'#else'blur'#end }],
+                #end
+            #end
+        },
+          ## Special：Tree table exclusive logic
+          #if ( $table.templateType == 2 )
+             ${classNameVar}Tree: [], // Tree structure
+          #end
+        ## Special：Master and sub-table exclusive logic
+        #if ( $table.templateType == 10 || $table.templateType == 12 )
+        #if ( $subTables && $subTables.size() > 0 )
+            /** Subtable form */
+             subTabsName: '$subClassNameVars.get(0)'
+        #end
+        #end
+      };
+    },
+    methods: {
+      /** Open pop-up window */
+     async open(id) {
+        this.dialogVisible = true;
+        this.reset();
+        // When modifying，Set data
+        if (id) {
+          this.formLoading = true;
+          try {
+            const res = await ${simpleClassName}Api.get${simpleClassName}(id);
+            this.formData = res.data;
+            this.title = "Modify${table.classComment}";
+          } finally {
+            this.formLoading = false;
+          }
+        }
+        this.title = "New${table.classComment}";
+        ## Special：Tree table exclusive logic
+        #if ( $table.templateType == 2 )
+        await this.get${simpleClassName}Tree();
+        #end
+      },
+      /** Submit button */
+      async submitForm() {
+        // Check the main table
+        await this.$refs["formRef"].validate();
+          ## Special：Master and sub-table exclusive logic
+          #if ( $table.templateType == 10 || $table.templateType == 12 )
+              #if ( $subTables && $subTables.size() > 0 )
+                // Check subtable
+                  #foreach ($subTable in $subTables)
+                      #set ($index = $foreach.count - 1)
+                      #set ($subClassNameVar = $subClassNameVars.get($index))
+                    try {
+                      ## The code will be replaced with the correct one after generation refs
+                      await this.refs['${subClassNameVar}FormRef'].validate();
+                    } catch (e) {
+                      this.subTabsName = '${subClassNameVar}';
+                      return;
+                    }
+                  #end
+              #end
+          #end
+        this.formLoading = true;
+        try {
+          const data = this.formData;
+        ## Special：Master and sub-table exclusive logic
+        #if ( $table.templateType == 10 || $table.templateType == 12 )
+        #if ( $subTables && $subTables.size() > 0 )
+            // Join sub-table data
+            #foreach ($subTable in $subTables)
+                #set ($index = $foreach.count - 1)
+                #set ($subClassNameVar = $subClassNameVars.get($index))
+              data.${subClassNameVar}#if ( $subTable.subJoinMany)s#end = this.refs['${subClassNameVar}FormRef'].getData();
+            #end
+        #end
+        #end
+          // Modified submission
+          if (data.${primaryColumn.javaField}) {
+            await ${simpleClassName}Api.update${simpleClassName}(data);
+            this.#[[$modal]]#.msgSuccess("Modification successful");
+            this.dialogVisible = false;
+            this.#[[$]]#emit('success');
+            return;
+          }
+          // Added commits
+          await ${simpleClassName}Api.create${simpleClassName}(data);
+          this.#[[$modal]]#.msgSuccess("Added successfully");
+          this.dialogVisible = false;
+          this.#[[$]]#emit('success');
+        } finally {
+          this.formLoading = false;
+        }
+      },
+        ## Special：Tree table exclusive logic
+        #if ( $table.templateType == 2 )
+          /** Get${table.classComment}Tree */
+         async get${simpleClassName}Tree() {
+            this.${classNameVar}Tree = [];
+            const res = await ${simpleClassName}Api.get${simpleClassName}List();
+            const root = { id: 0, name: 'Top${table.classComment}', children: [] };
+            root.children = this.handleTree(res.data, 'id', '${treeParentColumn.javaField}')
+            this.${classNameVar}Tree.push(root)
+          },
+        #end
+        ## Special：Tree table exclusive logic
+        #if ( $table.templateType == 2 )
+          /** Conversion${table.classComment}Data structure */
+          normalizer(node) {
+            if (node.children && !node.children.length) {
+              delete node.children;
+            }
+              #if ($treeNameColumn.javaField == "name")
+                return {
+                  id: node.id,
+                  label: node.name,
+                  children: node.children
+                };
+              #else
+                return {
+                  id: node.id,
+                  label: node['$treeNameColumn.javaField'],
+                  children: node.children
+                };
+              #end
+          },
+        #end
+      /** Form reset */
+      reset() {
+        this.formData = {
+            #foreach ($column in $columns)
+                #if ($column.createOperation || $column.updateOperation)
+                    #if ($column.htmlType == "checkbox")
+                            $column.javaField: [],
+                    #else
+                            $column.javaField: undefined,
+                    #end
+                #end
+            #end
+        };
+        this.resetForm("formRef");
+      }
+    }
+  };
+</script>

@@ -1,0 +1,18 @@
+### Request /mp/user/sync Interface => Success
+POST {{baseUrl}}/mp/user/sync?accountId=1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Request /mp/user/update Interface => Success
+PUT {{baseUrl}}/mp/user/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "id": "3",
+  "nickname": "test",
+  "remark": "Test Notes",
+  "tagIds": [103, 104]
+}

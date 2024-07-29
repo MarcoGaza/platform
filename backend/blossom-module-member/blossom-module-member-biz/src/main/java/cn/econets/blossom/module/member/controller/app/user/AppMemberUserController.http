@@ -1,0 +1,4 @@
+### Request /member/user/profile/get Interface => No permission
+GET {{appApi}}/member/user/get
+Authorization: Bearer test245
+tenant-id: {{appTenentId}}

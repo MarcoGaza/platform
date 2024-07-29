@@ -1,0 +1,168 @@
+package ${basePackage}.module.${table.moduleName}.service.${table.businessName};
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
+import ${jakartaPackage}.annotation.Resource;
+
+import ${baseFrameworkPackage}.test.core.ut.BaseDbUnitTest;
+
+import ${basePackage}.module.${table.moduleName}.controller.${sceneEnum.basePackage}.${table.businessName}.vo.*;
+import ${basePackage}.module.${table.moduleName}.dal.dataobject.${table.businessName}.${table.className}DO;
+import ${basePackage}.module.${table.moduleName}.dal.mysql.${table.businessName}.${table.className}Mapper;
+import ${PageResultClassName};
+
+import ${jakartaPackage}.annotation.Resource;
+import org.springframework.context.annotation.Import;
+import java.util.*;
+import java.time.LocalDateTime;
+
+import static cn.hutool.core.util.RandomUtil.*;
+import static ${basePackage}.module.${table.moduleName}.enums.ErrorCodeConstants.*;
+import static ${baseFrameworkPackage}.test.core.util.AssertUtils.*;
+import static ${baseFrameworkPackage}.test.core.util.RandomUtils.*;
+import static ${LocalDateTimeUtilsClassName}.*;
+import static ${ObjectUtilsClassName}.*;
+import static ${DateUtilsClassName}.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+## Field template
+#macro(getPageCondition $VO)
+       // mock Data
+       ${table.className}DO db${simpleClassName} = randomPojo(${table.className}DO.class, o -> { // Will find out later
+       #foreach ($column in $columns)
+       #if (${column.listOperation})
+       #set ($JavaField = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})##Capitalize the first letter
+           o.set$JavaField(null);
+       #end
+       #end
+       });
+       ${classNameVar}Mapper.insert(db${simpleClassName});
+       #foreach ($column in $columns)
+       #if (${column.listOperation})
+       #set ($JavaField = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})##Capitalize the first letter
+       // Test ${column.javaField} No match
+       ${classNameVar}Mapper.insert(cloneIgnoreId(db${simpleClassName}, o -> o.set$JavaField(null)));
+       #end
+       #end
+       // Prepare parameters
+       ${sceneEnum.prefixClass}${table.className}${VO} reqVO = new ${sceneEnum.prefixClass}${table.className}${VO}();
+       #foreach ($column in $columns)
+       #if (${column.listOperation})
+       #set ($JavaField = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})##Capitalize the first letter
+       #if (${column.listOperationCondition} == "BETWEEN")## BETWEEN Situation
+       reqVO.set${JavaField}(buildBetweenTime(2023, 2, 1, 2023, 2, 28));
+       #else
+       reqVO.set$JavaField(null);
+       #end
+       #end
+       #end
+#end
+/**
+ * {@link ${table.className}ServiceImpl} Unit test class
+ *
+ * @author ${table.author}
+ */
+@Import(${table.className}ServiceImpl.class)
+public class ${table.className}ServiceImplTest extends BaseDbUnitTest {
+
+    @Resource
+    private ${table.className}ServiceImpl ${classNameVar}Service;
+
+    @Resource
+    private ${table.className}Mapper ${classNameVar}Mapper;
+
+    @Test
+    public void testCreate${simpleClassName}_success() {
+        // Prepare parameters
+        ${sceneEnum.prefixClass}${table.className}SaveReqVO createReqVO = randomPojo(${sceneEnum.prefixClass}${table.className}SaveReqVO.class).setId(null);
+
+        // Call
+        ${primaryColumn.javaType} ${classNameVar}Id = ${classNameVar}Service.create${simpleClassName}(createReqVO);
+        // Assertion
+        assertNotNull(${classNameVar}Id);
+        // Check whether the record attributes are correct
+        ${table.className}DO ${classNameVar} = ${classNameVar}Mapper.selectById(${classNameVar}Id);
+        assertPojoEquals(createReqVO, ${classNameVar}, "id");
+    }
+
+    @Test
+    public void testUpdate${simpleClassName}_success() {
+        // mock Data
+        ${table.className}DO db${simpleClassName} = randomPojo(${table.className}DO.class);
+        ${classNameVar}Mapper.insert(db${simpleClassName});// @Sql: Insert an existing data first
+        // Prepare parameters
+        ${sceneEnum.prefixClass}${table.className}SaveReqVO updateReqVO = randomPojo(${sceneEnum.prefixClass}${table.className}SaveReqVO.class, o -> {
+            o.setId(db${simpleClassName}.getId()); // Settings updated ID
+        });
+
+        // Call
+        ${classNameVar}Service.update${simpleClassName}(updateReqVO);
+        // Check whether the update is correct
+        ${table.className}DO ${classNameVar} = ${classNameVar}Mapper.selectById(updateReqVO.getId()); // Get the latest
+        assertPojoEquals(updateReqVO, ${classNameVar});
+    }
+
+    @Test
+    public void testUpdate${simpleClassName}_notExists() {
+        // Prepare parameters
+        ${sceneEnum.prefixClass}${table.className}SaveReqVO updateReqVO = randomPojo(${sceneEnum.prefixClass}${table.className}SaveReqVO.class);
+
+        // Call, And assert exception
+        assertServiceException(() -> ${classNameVar}Service.update${simpleClassName}(updateReqVO), ${simpleClassName_underlineCase.toUpperCase()}_NOT_EXISTS);
+    }
+
+    @Test
+    public void testDelete${simpleClassName}_success() {
+        // mock Data
+        ${table.className}DO db${simpleClassName} = randomPojo(${table.className}DO.class);
+        ${classNameVar}Mapper.insert(db${simpleClassName});// @Sql: Insert an existing data first
+        // Prepare parameters
+        ${primaryColumn.javaType} id = db${simpleClassName}.getId();
+
+        // Call
+        ${classNameVar}Service.delete${simpleClassName}(id);
+       // The verification data does not exist
+       assertNull(${classNameVar}Mapper.selectById(id));
+    }
+
+    @Test
+    public void testDelete${simpleClassName}_notExists() {
+        // Prepare parameters
+        ${primaryColumn.javaType} id = random${primaryColumn.javaType}Id();
+
+        // Call, And assert exception
+        assertServiceException(() -> ${classNameVar}Service.delete${simpleClassName}(id), ${simpleClassName_underlineCase.toUpperCase()}_NOT_EXISTS);
+    }
+
+## Special：Tree table exclusive logic（Trees do not need paging interfaces）
+#if ( $table.templateType != 2 )
+    @Test
+    @Disabled  // TODO Please modify null The required value，Then delete @Disabled Annotation
+    public void testGet${simpleClassName}Page() {
+       #getPageCondition("PageReqVO")
+
+       // Call
+       PageResult<${table.className}DO> pageResult = ${classNameVar}Service.get${simpleClassName}Page(reqVO);
+       // Assertion
+       assertEquals(1, pageResult.getTotal());
+       assertEquals(1, pageResult.getList().size());
+       assertPojoEquals(db${simpleClassName}, pageResult.getList().get(0));
+    }
+#else
+    @Test
+    @Disabled  // TODO Please modify null The required value，Then delete @Disabled Annotation
+    public void testGet${simpleClassName}List() {
+       #getPageCondition("ListReqVO")
+
+       // Call
+       List<${table.className}DO> list = ${classNameVar}Service.get${simpleClassName}List(reqVO);
+       // Assertion
+       assertEquals(1, list.size());
+       assertPojoEquals(db${simpleClassName}, list.get(0));
+    }
+#end
+
+}

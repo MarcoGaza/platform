@@ -1,0 +1,67 @@
+### Request /login Interface => Success
+POST {{appApi}}/member/auth/login
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+
+{
+  "mobile": "15601691388",
+  "password": "admin123"
+}
+
+### Request /send-sms-code Interface => Success
+POST {{appApi}}/member/auth/send-sms-code
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+
+{
+  "mobile": "15601691388",
+  "scene": 1
+}
+
+### Request /sms-login Interface => Success
+POST {{appApi}}/member/auth/sms-login
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+terminal: 30
+
+{
+  "mobile": "15601691388",
+  "code": 9999
+}
+
+### Request /social-login Interface => Success
+POST {{appApi}}/member/auth/social-login
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+
+{
+  "type": 34,
+  "code": "0e1oc9000CTjFQ1oim200bhtb61oc90g",
+  "state": "default"
+}
+
+### Request /weixin-mini-app-login Interface => Success
+POST {{appApi}}/member/auth/weixin-mini-app-login
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+
+{
+  "phoneCode": "618e6412e0c728f5b8fc7164497463d0158a923c9e7fd86af8bba393b9decbc5",
+  "loginCode": "001frTkl21JUf94VGxol2hSlff1frTkR"
+}
+
+### Request /logout Interface => Success
+POST {{appApi}}/member/auth/logout
+Content-Type: application/json
+Authorization: Bearer c1b76bdaf2c146c581caa4d7fd81ee66
+tenant-id: {{appTenentId}}
+
+### Request /auth/refresh-token Interface => Success
+POST {{appApi}}/member/auth/refresh-token?refreshToken=bc43d929094849a28b3a69f6e6940d70
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+
+### Request /auth/create-weixin-jsapi-signature Interface => Success
+POST {{appApi}}/member/auth/create-weixin-jsapi-signature?url=http://www.econets.cn
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}

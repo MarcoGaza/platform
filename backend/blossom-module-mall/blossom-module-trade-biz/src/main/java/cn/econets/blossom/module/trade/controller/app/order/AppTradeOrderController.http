@@ -1,0 +1,64 @@
+### /trade-order/settlement Get order settlement information（Based on product）
+GET {{appApi}}/trade/order/settlement?type=0&items[0].skuId=1&items[0].count=2&items[1].skuId=2&items[1].count=3&couponId=1
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### /trade-order/settlement Get order settlement information（Based on shopping cart）
+GET {{appApi}}/trade/order/settlement?type=0&items[0].cartId=50&couponId=1
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### /trade-order/create Create order（Based on product）【Express Delivery】
+POST {{appApi}}/trade/order/create
+Content-Type: application/json
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+{
+  "pointStatus": true,
+  "deliveryType": 1,
+  "addressId": 21,
+  "items": [
+    {
+      "skuId": 1,
+      "count": 2
+    }
+  ],
+  "remark": "I am a note"
+}
+
+### /trade-order/create Create order（Based on product）【Self-collection】
+POST {{appApi}}/trade/order/create
+Content-Type: application/json
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+{
+  "pointStatus": true,
+  "deliveryType": 2,
+  "pickUpStoreId": 1,
+  "items": [
+    {
+      "skuId": 1,
+      "count": 2
+    }
+  ],
+  "remark": "I am a note",
+  "receiverName": "Potatoes",
+  "receiverMobile": "15601691300"
+}
+
+### Get the paging of order transactions
+GET {{appApi}}/trade/order/page?pageNo=1&pageSize=10
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### Get order transaction details
+GET {{appApi}}/trade/order/get-detail?id=21
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### Get the logistics track of the transaction order
+GET {{appApi}}/trade/order/get-express-track-list?id=70
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}

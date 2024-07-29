@@ -1,0 +1,54 @@
+### Request /create Interface => Success
+POST {{appApi}}//member/address/create
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+{
+  "name": "ximu",
+  "mobile": "15601691300",
+  "areaId": "610632",
+  "postCode": "200000",
+  "detailAddress": "Source code 233 Number 666 Room",
+  "defaulted": true
+}
+
+### Request /update Interface => Success
+PUT {{appApi}}//member/address/update
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+{
+  "id": "1",
+  "name": "ximu888",
+  "mobile": "15601691300",
+  "areaId": "610632",
+  "postCode": "200000",
+  "detailAddress": "Source code 233 Number 666 Room",
+  "defaulted": false
+}
+
+### Request /delete Interface => Success
+DELETE {{appApi}}//member/address/delete?id=2
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+### Request /get Interface => Success
+GET {{appApi}}//member/address/get?id=1
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+### Request /get-default Interface => Success
+GET {{appApi}}//member/address/get-default
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+### Request /list Interface => Success
+GET {{appApi}}//member/address/list
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}

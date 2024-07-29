@@ -1,0 +1,22 @@
+// TODO To do：Please copy the error code below to blossom-module-${table.moduleName}-api Module ErrorCodeConstants In the category。Attention，Please give“TODO Supplementary number”Set an error code number！！！
+// ========== ${table.classComment} TODO Supplementary number ==========
+ErrorCode ${simpleClassName_underlineCase.toUpperCase()}_NOT_EXISTS = new ErrorCode(TODO Supplementary number, "${table.classComment}Does not exist");
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+ErrorCode ${simpleClassName_underlineCase.toUpperCase()}_EXITS_CHILDREN = new ErrorCode(TODO Supplementary number, "Existence exists${table.classComment}，Cannot delete");
+ErrorCode ${simpleClassName_underlineCase.toUpperCase()}_PARENT_NOT_EXITS = new ErrorCode(TODO Supplementary number,"Parent${table.classComment}Does not exist");
+ErrorCode ${simpleClassName_underlineCase.toUpperCase()}_PARENT_ERROR = new ErrorCode(TODO Supplementary number, "Cannot set itself as parent${table.classComment}");
+ErrorCode ${simpleClassName_underlineCase.toUpperCase()}_${treeNameColumn_javaField_underlineCase.toUpperCase()}_DUPLICATE = new ErrorCode(TODO Supplementary number, "This already exists${treeNameColumn.columnComment}of${table.classComment}");
+ErrorCode ${simpleClassName_underlineCase.toUpperCase()}_PARENT_IS_CHILD = new ErrorCode(TODO Supplementary number, "Cannot set own child${table.className}Father${table.className}");
+#end
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType == 11 )## Special：ERP Situation
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+#set ($simpleClassNameUnderlineCase = $simpleClassNameUnderlineCases.get($index))
+ErrorCode ${simpleClassNameUnderlineCase.toUpperCase()}_NOT_EXISTS = new ErrorCode(TODO Supplementary number, "${subTable.classComment}Does not exist");
+#if ( !$subTable.subJoinMany )
+ErrorCode ${simpleClassNameUnderlineCase.toUpperCase()}_EXISTS = new ErrorCode(TODO Supplementary number, "${subTable.classComment}Already exists");
+#end
+#end
+#end

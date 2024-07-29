@@ -1,0 +1,205 @@
+#set ($subTable = $subTables.get($subIndex))##Current table
+#set ($subColumns = $subColumnsList.get($subIndex))##Current field array
+#set ($subSimpleClassName = $subSimpleClassNames.get($subIndex))
+#set ($subJoinColumn = $subJoinColumns.get($subIndex))##Current join Field
+<template>
+  <div class="app-container">
+    <!-- Dialog box(Add / Modify) -->
+    <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="45%" v-dialogDrag append-to-body>
+      <el-form ref="formRef" :model="formData" :rules="formRules" v-loading="formLoading" label-width="100px">
+          #foreach($column in $subColumns)
+              #if ($column.createOperation || $column.updateOperation)
+                  #set ($dictType = $column.dictType)
+                  #set ($javaField = $column.javaField)
+                  #set ($javaType = $column.javaType)
+                  #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+                  #set ($comment = $column.columnComment)
+                  #if ( $column.id == $subJoinColumn.id) ## Special：Ignore the master and sub-tables join Field，No need to fill in
+                  #elseif ($column.htmlType == "input" && !$column.primaryKey)## Ignore primary key，Not in the form
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-input v-model="formData.${javaField}" placeholder="Please enter${comment}" />
+                    </el-form-item>
+                  #elseif($column.htmlType == "imageUpload")## Upload pictures
+                      #set ($hasImageUploadColumn = true)
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <ImageUpload v-model="formData.${javaField}"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "fileUpload")## File upload
+                      #set ($hasFileUploadColumn = true)
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <FileUpload v-model="formData.${javaField}"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "editor")## Text Editor
+                      #set ($hasEditorColumn = true)
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <editor v-model="formData.${javaField}" :min-height="192"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "select")## Drop-down box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-select v-model="formData.${javaField}" placeholder="Please select${comment}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-option v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                       :key="dict.value" :label="dict.label" #if ($column.javaType == "Integer" || $column.javaType == "Long"):value="parseInt(dict.value)"#else:value="dict.value"#end />
+                          #else##No data dictionary
+                            <el-option label="Please select dictionary generation" value="" />
+                          #end
+                      </el-select>
+                    </el-form-item>
+                  #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-checkbox-group v-model="formData.${javaField}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-checkbox v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                         :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"#else:label="dict.value"#end>{{dict.label}}</el-checkbox>
+                          #else##No data dictionary
+                            <el-checkbox>Please select dictionary generation</el-checkbox>
+                          #end
+                      </el-checkbox-group>
+                    </el-form-item>
+                  #elseif($column.htmlType == "radio")## Radio box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-radio-group v-model="formData.${javaField}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-radio v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                      :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"
+                                      #else:label="dict.value"#end>{{dict.label}}</el-radio>
+                          #else##No data dictionary
+                            <el-radio label="1">Please select dictionary generation</el-radio>
+                          #end
+                      </el-radio-group>
+                    </el-form-item>
+                  #elseif($column.htmlType == "datetime")## Time frame
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-date-picker clearable v-model="formData.${javaField}" type="date" value-format="timestamp" placeholder="Select${comment}" />
+                    </el-form-item>
+                  #elseif($column.htmlType == "textarea")## Text box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-input v-model="formData.${javaField}" type="textarea" placeholder="Please enter content" />
+                    </el-form-item>
+                  #end
+              #end
+          #end
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="submitForm" :disabled="formLoading">Yes Set</el-button>
+        <el-button @click="dialogVisible = false">Take Disappear</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+  import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}';
+      #if ($hasImageUploadColumn)
+      import ImageUpload from '@/components/ImageUpload';
+      #end
+      #if ($hasFileUploadColumn)
+      import FileUpload from '@/components/FileUpload';
+      #end
+      #if ($hasEditorColumn)
+      import Editor from '@/components/Editor';
+      #end
+  export default {
+    name: "${subSimpleClassName}Form",
+    components: {
+        #if ($hasImageUploadColumn)
+          ImageUpload,
+        #end
+        #if ($hasFileUploadColumn)
+          FileUpload,
+        #end
+        #if ($hasEditorColumn)
+          Editor,
+        #end
+    },
+    data() {
+      return {
+        // Popup title
+        dialogTitle: "",
+        // Whether to display the pop-up layer
+        dialogVisible: false,
+        // The form is loading：1）Data loading during modification；2）Submit button disabled
+        formLoading: false,
+        // Form parameters
+        formData: {
+            #foreach ($column in $subColumns)
+                #if ($column.createOperation || $column.updateOperation)
+                    #if ($column.htmlType == "checkbox")
+                            $column.javaField: [],
+                    #else
+                            $column.javaField: undefined,
+                    #end
+                #end
+            #end
+        },
+        // Form validation
+        formRules: {
+            #foreach ($column in $subColumns)
+                #if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+                    #set($comment=$column.columnComment)
+                        $column.javaField: [{ required: true, message: "${comment}Cannot be empty", trigger: #if($column.htmlType == "select")"change"#else"blur"#end }],
+                #end
+            #end
+        },
+      };
+    },
+    methods: {
+      /** Open pop-up window */
+      async open(id, ${subJoinColumn.javaField}) {
+        this.dialogVisible = true;
+        this.reset();
+        this.formData.${subJoinColumn.javaField} = ${subJoinColumn.javaField};
+        // When modifying，Set data
+        if (id) {
+          this.formLoading = true;
+          try {
+            const res = await ${simpleClassName}Api.get${subSimpleClassName}(id);
+            this.formData = res.data;
+            this.dialogTitle = "Modify${subTable.classComment}";
+          } finally {
+            this.formLoading = false;
+          }
+        }
+        this.dialogTitle = "Newly added${subTable.classComment}";
+      },
+      /** Submit button */
+      async submitForm() {
+        await this.#[[$]]#refs["formRef"].validate();
+        this.formLoading = true;
+        try {
+            const data = this.formData;
+            // Modified submission
+            if (data.${primaryColumn.javaField}) {
+            await  ${simpleClassName}Api.update${subSimpleClassName}(data);
+            this.#[[$modal]]#.msgSuccess("Modification successful");
+            this.dialogVisible = false;
+            this.#[[$]]#emit('success');
+              return;
+            }
+            // Added commits
+              await ${simpleClassName}Api.create${subSimpleClassName}(data);
+              this.#[[$modal]]#.msgSuccess("Added successfully");
+              this.dialogVisible = false;
+              this.#[[$]]#emit('success');
+        }finally {
+          this.formLoading = false;
+        }
+      },
+      /** Form reset */
+      reset() {
+        this.formData = {
+            #foreach ($column in $subColumns)
+                #if ($column.createOperation || $column.updateOperation)
+                    #if ($column.htmlType == "checkbox")
+                            $column.javaField: [],
+                    #else
+                            $column.javaField: undefined,
+                    #end
+                #end
+            #end
+        };
+        this.resetForm("formRef");
+      },
+    }
+  };
+</script>

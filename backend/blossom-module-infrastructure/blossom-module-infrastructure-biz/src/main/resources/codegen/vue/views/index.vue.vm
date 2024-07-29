@@ -1,0 +1,340 @@
+<template>
+  <div class="app-container">
+    <!-- Search Task Bar -->
+    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+#foreach($column in $columns)
+#if ($column.listOperation)
+    #set ($dictType=$column.dictType)
+    #set ($javaField = $column.javaField)
+    #set ($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+    #set ($comment=$column.columnComment)
+#if ($column.htmlType == "input")
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-input v-model="queryParams.${javaField}" placeholder="Please enter${comment}" clearable @keyup.enter.native="handleQuery"/>
+      </el-form-item>
+#elseif ($column.htmlType == "select" || $column.htmlType == "radio")
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-select v-model="queryParams.${javaField}" placeholder="Please select${comment}" clearable size="small">
+    #if ("" != $dictType)## Set dictType Data dictionary status
+          <el-option v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                       :key="dict.value" :label="dict.label" :value="dict.value"/>
+    #else## Not set dictType Data dictionary status
+          <el-option label="Please select dictionary generation" value="" />
+    #end
+        </el-select>
+      </el-form-item>
+#elseif($column.htmlType == "datetime")
+    #if ($column.listOperationCondition != "BETWEEN")## Out of range
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-date-picker clearable v-model="queryParams.${javaField}" type="date" value-format="yyyy-MM-dd" placeholder="Select${comment}" />
+      </el-form-item>
+    #else## Range
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-date-picker v-model="queryParams.${javaField}" style="width: 240px" value-format="yyyy-MM-dd HH:mm:ss" type="daterange"
+                        range-separator="-" start-placeholder="Start Date" end-placeholder="End Date" :default-time="['00:00:00', '23:59:59']" />
+      </el-form-item>
+    #end
+#end
+#end
+#end
+      <el-form-item>
+        <el-button type="primary" icon="el-icon-search" @click="handleQuery">Search</el-button>
+        <el-button icon="el-icon-refresh" @click="resetQuery">Reset</el-button>
+      </el-form-item>
+    </el-form>
+
+    <!-- Operation Toolbar -->
+    <el-row :gutter="10" class="mb8">
+      <el-col :span="1.5">
+        <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="openForm(undefined)"
+                   v-hasPermi="['${permissionPrefix}:create']">Newly added</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" :loading="exportLoading"
+                   v-hasPermi="['${permissionPrefix}:export']">Export</el-button>
+      </el-col>
+        ## Special：Tree table exclusive logic
+        #if ( $table.templateType == 2 )
+          <el-col :span="1.5">
+            <el-button type="danger" plain icon="el-icon-sort" size="mini" @click="toggleExpandAll">
+              Expand/Fold
+            </el-button>
+          </el-col>
+        #end
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+    </el-row>
+
+      ## Special：Master and sub-table exclusive logic
+      #if ( $table.templateType == 11 && $subTables && $subTables.size() > 0 )
+      <el-table
+        v-loading="loading"
+        :data="list"
+        :stripe="true"
+        :highlight-current-row="true"
+        :show-overflow-tooltip="true"
+        @current-change="handleCurrentChange"
+      >
+          ## Special：Tree table exclusive logic
+      #elseif ( $table.templateType == 2 )
+      <el-table
+        v-loading="loading"
+        :data="list"
+        :stripe="true"
+        :show-overflow-tooltip="true"
+        v-if="refreshTable"
+        row-key="id"
+        :default-expand-all="isExpandAll"
+        :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
+      >
+      #else
+      <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
+      #end
+      ## Special：Master and sub-table exclusive logic
+      #if ( $table.templateType == 12 && $subTables && $subTables.size() > 0 )
+        <!-- List of subtables -->
+        <el-table-column type="expand">
+          <template #default="scope">
+            <el-tabs value="$subClassNameVars.get(0)">
+                #foreach ($subTable in $subTables)
+                    #set ($index = $foreach.count - 1)
+                    #set ($subClassNameVar = $subClassNameVars.get($index))
+                    #set ($subSimpleClassName = $subSimpleClassNames.get($index))
+                    #set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+                  <el-tab-pane label="${subTable.classComment}" name="$subClassNameVar">
+                    <${subSimpleClassName}List :${subJoinColumn_strikeCase}="scope.row.id" />
+                  </el-tab-pane>
+                #end
+            </el-tabs>
+          </template>
+        </el-table-column>
+      #end
+#foreach($column in $columns)
+#if ($column.listOperationResult)
+    #set ($dictType=$column.dictType)
+    #set ($javaField = $column.javaField)
+    #set ($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+    #set ($comment=$column.columnComment)
+#if ($column.javaType == "LocalDateTime")## Time type
+      <el-table-column label="${comment}" align="center" prop="${javaField}" width="180">
+        <template v-slot="scope">
+          <span>{{ parseTime(scope.row.${javaField}) }}</span>
+        </template>
+      </el-table-column>
+#elseif("" != $column.dictType)## Data dictionary
+      <el-table-column label="${comment}" align="center" prop="${javaField}">
+        <template v-slot="scope">
+          <dict-tag :type="DICT_TYPE.$dictType.toUpperCase()" :value="scope.row.${column.javaField}" />
+        </template>
+      </el-table-column>
+#else
+      <el-table-column label="${comment}" align="center" prop="${javaField}" />
+#end
+#end
+#end
+      <el-table-column label="Operation" align="center" class-name="small-padding fixed-width">
+        <template v-slot="scope">
+          <el-button size="mini" type="text" icon="el-icon-edit" @click="openForm(scope.row.${primaryColumn.javaField})"
+                     v-hasPermi="['${permissionPrefix}:update']">Modify</el-button>
+          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)"
+                     v-hasPermi="['${permissionPrefix}:delete']">Delete</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+## Special：Tree table exclusive logic（Trees do not need paging）
+#if ( $table.templateType != 2 )
+    <!-- Pagination component -->
+    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNo" :limit.sync="queryParams.pageSize"
+                @pagination="getList"/>
+#end
+    <!-- Dialog box(Add / Modify) -->
+    <${simpleClassName}Form ref="formRef" @success="getList" />
+  ## Special：Master and sub-table exclusive logic
+  #if ( $table.templateType == 11 && $subTables && $subTables.size() > 0 )
+    <!-- List of subtables -->
+      <el-tabs v-model="subTabsName">
+          #foreach ($subTable in $subTables)
+              #set ($index = $foreach.count - 1)
+              #set ($subClassNameVar = $subClassNameVars.get($index))
+              #set ($subSimpleClassName = $subSimpleClassNames.get($index))
+              #set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+            <el-tab-pane label="${subTable.classComment}" name="$subClassNameVar">
+              <${subSimpleClassName}List v-if="currentRow.id" :${subJoinColumn_strikeCase}="currentRow.id" />
+            </el-tab-pane>
+          #end
+      </el-tabs>
+  #end
+  </div>
+</template>
+
+<script>
+import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}';
+import ${simpleClassName}Form from './${simpleClassName}Form.vue';
+#if ($hasImageUploadColumn)
+import ImageUpload from '@/components/ImageUpload';
+#end
+#if ($hasFileUploadColumn)
+import FileUpload from '@/components/FileUpload';
+#end
+#if ($hasEditorColumn)
+import Editor from '@/components/Editor';
+#end
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType != 10 )
+#if ( $subTables && $subTables.size() > 0 )
+    #foreach ($subSimpleClassName in $subSimpleClassNames)
+    import ${subSimpleClassName}List from './components/${subSimpleClassName}List.vue';
+    #end
+#end
+#end
+export default {
+  name: "${simpleClassName}",
+  components: {
+          ${simpleClassName}Form,
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType != 10 )
+#if ( $subTables && $subTables.size() > 0 )
+      #foreach ($subSimpleClassName in $subSimpleClassNames)
+          ${subSimpleClassName}List,
+      #end
+#end
+#end
+#if ($hasImageUploadColumn)
+    ImageUpload,
+#end
+#if ($hasFileUploadColumn)
+    FileUpload,
+#end
+#if ($hasEditorColumn)
+    Editor,
+#end
+  },
+  data() {
+    return {
+      // Mask layer
+      loading: true,
+      // Export mask layer
+      exportLoading: false,
+      // Show search conditions
+      showSearch: true,
+      ## Special：Tree table exclusive logic（Trees do not require paging interfaces）
+      #if ( $table.templateType != 2 )
+        // Total number of entries
+        total: 0,
+      #end
+      // ${table.classComment}List
+      list: [],
+      // Whether to expand，Expand all by default
+      isExpandAll: true,
+      // Re-render table status
+      refreshTable: true,
+      // Selected row
+      currentRow: {},
+      // Query parameters
+      queryParams: {
+        ## Special：Tree table exclusive logic（Trees do not require paging interfaces）
+        #if ( $table.templateType != 2 )
+            pageNo: 1,
+            pageSize: 10,
+        #end
+        #foreach ($column in $columns)
+        #if ($column.listOperation)
+        #if ($column.listOperationCondition != 'BETWEEN')
+        $column.javaField: null,
+        #end
+        #if ($column.htmlType == "datetime" && $column.listOperationCondition == "BETWEEN")
+        $column.javaField: [],
+        #end
+        #end
+        #end
+      },
+        ## Special：Master and sub-table exclusive logic-erp
+        #if ( $table.templateType == 11)
+            #if ( $subTables && $subTables.size() > 0 )
+              /** List of subtables */
+              subTabsName: '$subClassNameVars.get(0)'
+            #end
+        #end
+    };
+  },
+  created() {
+    this.getList();
+  },
+  methods: {
+    /** Query list */
+    async getList() {
+      try {
+      this.loading = true;
+      ## Special：Tree table exclusive logic（Trees do not need paging interfaces）
+      #if ( $table.templateType == 2 )
+       const res = await ${simpleClassName}Api.get${simpleClassName}List(this.queryParams);
+       this.list = this.handleTree(res.data, 'id', '${treeParentColumn.javaField}');
+      #else
+        const res = await ${simpleClassName}Api.get${simpleClassName}Page(this.queryParams);
+        this.list = res.data.list;
+        this.total = res.data.total;
+      #end
+      } finally {
+        this.loading = false;
+      }
+    },
+    /** Search button operation */
+    handleQuery() {
+      this.queryParams.pageNo = 1;
+      this.getList();
+    },
+    /** Reset button operation */
+    resetQuery() {
+      this.resetForm("queryForm");
+      this.handleQuery();
+    },
+    /** Add/Modify operation */
+    openForm(id) {
+      this.#[[$]]#refs["formRef"].open(id);
+    },
+    /** Delete button operation */
+    async handleDelete(row) {
+      const ${primaryColumn.javaField} = row.${primaryColumn.javaField};
+      await this.#[[$modal]]#.confirm('Are you sure to delete?${table.classComment}Number is"' + ${primaryColumn.javaField} + '"Data item?')
+      try {
+       await ${simpleClassName}Api.delete${simpleClassName}(${primaryColumn.javaField});
+       await this.getList();
+       this.#[[$modal]]#.msgSuccess("Deleted successfully");
+      } catch {}
+    },
+    /** Export button operation */
+    async handleExport() {
+      await this.#[[$modal]]#.confirm('Are you sure to export all?${table.classComment}Data item?');
+      try {
+        this.exportLoading = true;
+        const res = await ${simpleClassName}Api.export${simpleClassName}Excel(this.queryParams);
+        this.#[[$]]#download.excel(res.data, '${table.classComment}.xls');
+      } catch {
+      } finally {
+        this.exportLoading = false;
+      }
+    },
+      ## Special：Master and sub-table exclusive logic
+      #if ( $table.templateType == 11 )
+        /** Selected row operation */
+        handleCurrentChange(row) {
+         this.currentRow = row;
+        #if ( $subTables && $subTables.size() > 0 )
+          /** List of subtables */
+          this.subTabsName = '$subClassNameVars.get(0)';
+        #end
+        },
+      #end
+      ## Special：Tree table exclusive logic
+      #if ( $table.templateType == 2 )
+        /** Expand/Folding operation */
+        toggleExpandAll() {
+          this.refreshTable = false
+          this.isExpandAll = !this.isExpandAll
+          this.$nextTick(function () {
+            this.refreshTable = true
+          })
+        }
+      #end
+  }
+};
+</script>

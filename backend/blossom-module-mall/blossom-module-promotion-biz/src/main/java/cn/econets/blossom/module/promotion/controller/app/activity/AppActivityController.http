@@ -1,0 +1,5 @@
+### /promotion/activity/list-by-spu-ids Get multiple products，Every activity recently participated in
+GET {{appApi}}/promotion/activity/list-by-spu-ids?spuIds=222&spuIds=633
+Authorization: Bearer {{appToken}}
+Content-Type: application/json
+tenant-id: {{appTenentId}}

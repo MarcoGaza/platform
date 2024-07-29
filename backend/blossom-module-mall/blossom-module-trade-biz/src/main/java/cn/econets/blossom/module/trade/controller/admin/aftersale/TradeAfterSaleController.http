@@ -1,0 +1,33 @@
+### Get transaction post-sales paging => Success
+GET {{baseUrl}}/trade/after-sale/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Agree to after-sales service => Success
+PUT {{baseUrl}}/trade/after-sale/agree?id=7
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+Content-Type: application/json
+
+### Refuse after-sales service => Success
+PUT {{baseUrl}}/trade/after-sale/disagree
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+Content-Type: application/json
+
+{
+  "id": 6,
+  "auditReason": "Ababa"
+}
+
+### Confirm refund => Success
+PUT {{baseUrl}}/trade/after-sale/refund?id=6
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+Content-Type: application/json
+
+### Confirm receipt => Success
+PUT {{baseUrl}}/trade/after-sale/receive?id=7
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+Content-Type: application/json

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>cn.econets.boot</groupId>
+        <artifactId>blossom</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>blossom-server</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        Backend Server Main project，By introducing the need blossom-module-xxx Dependencies，
+        Thereby providing Restful API For front-end projects。
+        In essence，It's just an empty shell（Container）！
+    </description>
+
+    <dependencies>
+        <!-- Necessary dependencies -->
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-infrastructure-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-system-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- Non-essential dependencies -->
+        <!-- Member Center。Default comment，Ensure compilation speed -->
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-member-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- Workflow。Default comment，Ensure compilation speed -->
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-bpm-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- Payment Service。Default comment，Ensure compilation speed -->
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-pay-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- WeChat public account module。Default comment，Ensure compilation speed -->
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-mp-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!-- Mall related modules。Default comment，Ensure compilation speed-->
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-product-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-promotion-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-trade-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-statistics-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.econets.boot</groupId>
+            <artifactId>blossom-module-crm-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+
+        <!-- spring boot Configure required dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test Test related -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <!-- Settings for build jar Package Name -->
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <!-- Packaging -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal> <!-- To be introduced jar Break into it -->
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

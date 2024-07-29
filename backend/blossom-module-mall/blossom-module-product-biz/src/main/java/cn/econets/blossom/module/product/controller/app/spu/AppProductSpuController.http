@@ -1,0 +1,18 @@
+### Get the paging of order transactions（Default）
+GET {{appApi}}/product/spu/page?pageNo=1&pageSize=10
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### Get the paging of order transactions（Price）
+GET {{appApi}}/product/spu/page?pageNo=1&pageSize=10&sortField=price&sortAsc=true
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### Get the paging of order transactions（Sales）
+GET {{appApi}}/product/spu/page?pageNo=1&pageSize=10&sortField=salesCount&sortAsc=true
+Authorization: Bearer {{appToken}}
+tenant-id: {{appTenentId}}
+
+### Get goods SPU Details
+GET {{appApi}}/product/spu/get-detail?id=102
+tenant-id: {{appTenentId}}

@@ -1,0 +1,9 @@
+### Get transaction order paging => Success
+GET {{baseUrl}}/trade/order/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Get transaction order paging => Success
+GET {{baseUrl}}/trade/order/get-detail?id=21
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}

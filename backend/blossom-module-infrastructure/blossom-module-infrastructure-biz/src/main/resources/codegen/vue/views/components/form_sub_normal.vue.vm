@@ -1,0 +1,347 @@
+#set ($subTable = $subTables.get($subIndex))##Current table
+#set ($subColumns = $subColumnsList.get($subIndex))##Current field array
+#set ($subJoinColumn = $subJoinColumns.get($subIndex))##Current join Field
+#set ($subSimpleClassName = $subSimpleClassNames.get($subIndex))
+#set ($subJoinColumn = $subJoinColumns.get($subIndex))##Current join Field
+#set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+<template>
+  <div class="app-container">
+    #if ( $subTable.subJoinMany )## Situation 1：One to many，table + form
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        v-loading="formLoading"
+        label-width="0px"
+        :inline-message="true"
+      >
+        <el-table :data="formData" class="-mt-10px">
+          <el-table-column label="Serial number" type="index" width="100" />
+            #foreach($column in $subColumns)
+                #if ($column.createOperation || $column.updateOperation)
+                    #set ($dictType = $column.dictType)
+                    #set ($javaField = $column.javaField)
+                    #set ($javaType = $column.javaType)
+                    #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+                    #set ($comment = $column.columnComment)
+                    #if ( $column.id == $subJoinColumn.id) ## Special：Ignore the master and sub-tables join Field，No need to fill in
+                    #elseif ($column.htmlType == "input" && !$column.primaryKey)## Ignore primary key，Not in the form
+                      <el-table-column label="${comment}" min-width="150">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <el-input v-model="row.${javaField}" placeholder="Please enter${comment}" />
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "imageUpload")## Upload pictures
+                        #set ($hasImageUploadColumn = true)
+                      <el-table-column label="${comment}" min-width="200">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <ImageUpload v-model="row.${javaField}"/>
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "fileUpload")## File upload
+                        #set ($hasFileUploadColumn = true)
+                      <el-table-column label="${comment}" min-width="200">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <FileUpload v-model="row.${javaField}"/>
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "editor")## Text Editor
+                        #set ($hasEditorColumn = true)
+                      <el-table-column label="${comment}" min-width="400">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <Editor v-model="row.${javaField}" :min-height="192"/>
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "select")## Drop-down box
+                      <el-table-column label="${comment}" min-width="150">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <el-select v-model="row.${javaField}" placeholder="Please select${comment}">
+                                #if ("" != $dictType)## With data dictionary
+                                  <el-option v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                             :key="dict.value" :label="dict.label" #if ($column.javaType == "Integer" || $column.javaType == "Long"):value="parseInt(dict.value)"#else:value="dict.value"#end />
+                                #else##No data dictionary
+                                  <el-option label="Please select dictionary generation" value="" />
+                                #end
+                            </el-select>
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+                      <el-table-column label="${comment}" min-width="150">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <el-checkbox-group v-model="row.${javaField}">
+                                #if ("" != $dictType)## With data dictionary
+                                  <el-checkbox v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                               :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"#else:label="dict.value"#end>{{dict.label}}</el-checkbox>
+                                #else##No data dictionary
+                                  <el-checkbox>Please select dictionary generation</el-checkbox>
+                                #end
+                            </el-checkbox-group>
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "radio")## Radio Box
+                      <el-table-column label="${comment}" min-width="150">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <el-radio-group v-model="row.${javaField}">
+                                #if ("" != $dictType)## With data dictionary
+                                  <el-radio v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                            :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"
+                                            #else:label="dict.value"#end>{{dict.label}}</el-radio>
+                                #else##No data dictionary
+                                  <el-radio label="1">Please select dictionary generation</el-radio>
+                                #end
+                            </el-radio-group>
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "datetime")## Time frame
+                      <el-table-column label="${comment}" min-width="150">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <el-date-picker clearable v-model="row.${javaField}" type="date" value-format="timestamp" placeholder="Select${comment}" />
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #elseif($column.htmlType == "textarea")## Text box
+                      <el-table-column label="${comment}" min-width="200">
+                        <template v-slot="{ row, $index }">
+                          <el-form-item :prop="`${$index}.${javaField}`" :rules="formRules.${javaField}" class="mb-0px!">
+                            <el-input v-model="row.${javaField}" type="textarea" placeholder="Please enter${comment}" />
+                          </el-form-item>
+                        </template>
+                      </el-table-column>
+                    #end
+                #end
+            #end
+          <el-table-column align="center" fixed="right" label="Operation" width="60">
+            <template v-slot="{ $index }">
+              <el-link @click="handleDelete($index)">—</el-link>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-form>
+      <el-row justify="center" class="mt-3">
+        <el-button @click="handleAdd" round>+ Add${subTable.classComment}</el-button>
+      </el-row>
+    #else## Situation 2：One-to-one，form
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        label-width="100px"
+        v-loading="formLoading"
+      >
+          #foreach($column in $subColumns)
+              #if ($column.createOperation || $column.updateOperation)
+                  #set ($dictType = $column.dictType)
+                  #set ($javaField = $column.javaField)
+                  #set ($javaType = $column.javaType)
+                  #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+                  #set ($comment = $column.columnComment)
+                  #if ( $column.id == $subJoinColumn.id) ## Special：Ignore the master and sub-tables join Field，No need to fill in
+                  #elseif ($column.htmlType == "input" && !$column.primaryKey)
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-input v-model="formData.${javaField}" placeholder="Please enter${comment}" />
+                    </el-form-item>
+                  #elseif($column.htmlType == "imageUpload")## Upload pictures
+                      #set ($hasImageUploadColumn = true)
+                    <el-form-item label="${comment}">
+                      <ImageUpload v-model="formData.${javaField}"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "fileUpload")## File upload
+                      #set ($hasFileUploadColumn = true)
+                    <el-form-item label="${comment}">
+                      <FileUpload v-model="formData.${javaField}"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "editor")## Text Editor
+                      #set ($hasEditorColumn = true)
+                    <el-form-item label="${comment}">
+                      <Editor v-model="formData.${javaField}" :min-height="192"/>
+                    </el-form-item>
+                  #elseif($column.htmlType == "select")## Drop-down box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-select v-model="formData.${javaField}" placeholder="Please select${comment}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-option v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                       :key="dict.value" :label="dict.label" #if ($column.javaType == "Integer" || $column.javaType == "Long"):value="parseInt(dict.value)"#else:value="dict.value"#end />
+                          #else##No data dictionary
+                            <el-option label="Please select dictionary generation" value="" />
+                          #end
+                      </el-select>
+                    </el-form-item>
+                  #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-checkbox-group v-model="formData.${javaField}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-checkbox v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                         :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"#else:label="dict.value"#end>{{dict.label}}</el-checkbox>
+                          #else##No data dictionary
+                            <el-checkbox>Please select dictionary generation</el-checkbox>
+                          #end
+                      </el-checkbox-group>
+                    </el-form-item>
+                  #elseif($column.htmlType == "radio")## Radio box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-radio-group v-model="formData.${javaField}">
+                          #if ("" != $dictType)## With data dictionary
+                            <el-radio v-for="dict in this.getDictDatas(DICT_TYPE.$dictType.toUpperCase())"
+                                      :key="dict.value" #if($column.javaType == "Integer" || $column.javaType == "Long"):label="parseInt(dict.value)"
+                                      #else:label="dict.value"#end>{{dict.label}}</el-radio>
+                          #else##No data dictionary
+                            <el-radio label="1">Please select dictionary generation</el-radio>
+                          #end
+                      </el-radio-group>
+                    </el-form-item>
+                  #elseif($column.htmlType == "datetime")## Time frame
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-date-picker clearable v-model="formData.${javaField}" type="date" value-format="timestamp" placeholder="Select${comment}" />
+                    </el-form-item>
+                  #elseif($column.htmlType == "textarea")## Text box
+                    <el-form-item label="${comment}" prop="${javaField}">
+                      <el-input v-model="formData.${javaField}" type="textarea" placeholder="Please enter${comment}" />
+                    </el-form-item>
+                  #end
+              #end
+          #end
+      </el-form>
+    #end
+  </div>
+</template>
+
+<script>
+  import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}';
+      #if ($hasImageUploadColumn)
+      import ImageUpload from '@/components/ImageUpload';
+      #end
+      #if ($hasFileUploadColumn)
+      import FileUpload from '@/components/FileUpload';
+      #end
+      #if ($hasEditorColumn)
+      import Editor from '@/components/Editor';
+      #end
+  export default {
+    name: "${subSimpleClassName}Form",
+    components: {
+        #if ($hasImageUploadColumn)
+          ImageUpload,
+        #end
+        #if ($hasFileUploadColumn)
+          FileUpload,
+        #end
+        #if ($hasEditorColumn)
+          Editor,
+        #end
+    },
+    props:[
+      '${subJoinColumn.javaField}'
+    ],// ${subJoinColumn.columnComment}（Related fields of the main table）
+    data() {
+      return {
+        // The form is loading：1）Data loading during modification；2）Submit button disabled
+        formLoading: false,
+        // Form parameters
+        formData: [],
+        // Form validation
+        formRules: {
+            #foreach ($column in $subColumns)
+                #if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+                    #set($comment=$column.columnComment)
+                        $column.javaField: [{ required: true, message: "${comment}Cannot be empty", trigger: #if($column.htmlType == "select")"change"#else"blur"#end }],
+                #end
+            #end
+        },
+      };
+    },
+    watch:{/** Monitor changes in the associated fields of the main table，Load the corresponding sub-table data */
+      ${subJoinColumn.javaField}:{
+        handler(val) {
+          // 1. Reset form
+            #if ( $subTable.subJoinMany )
+              this.formData = []
+            #else
+              this.formData = {
+                  #foreach ($column in $subColumns)
+                      #if ($column.createOperation || $column.updateOperation)
+                          #if ($column.htmlType == "checkbox")
+                                  $column.javaField: [],
+                          #else
+                                  $column.javaField: undefined,
+                          #end
+                      #end
+                  #end
+              }
+            #end
+          // 2. val Not empty，Load data
+          if (!val) {
+            return;
+          }
+          try {
+            this.formLoading = true;
+            // We still need to get it here this Otherwise you can't get it formData
+            const that = this;
+            #if ( $subTable.subJoinMany )
+            ${simpleClassName}Api.get${subSimpleClassName}ListBy${SubJoinColumnName}(val).then(function (res){
+              that.formData = res.data;
+            })
+            #else
+            ${simpleClassName}Api.get${subSimpleClassName}By${SubJoinColumnName}(val).then(function (res){
+              const data = res.data;
+              if (!data) {
+                return
+              }
+              that.formData = data;
+            })
+            #end
+          } finally {
+            this.formLoading = false;
+          }
+        },
+        immediate: true
+      }
+    },
+    methods: {
+        #if ( $subTable.subJoinMany )
+          /** Add button operation */
+          handleAdd() {
+            const row = {
+                #foreach ($column in $subColumns)
+                    #if ($column.createOperation || $column.updateOperation)
+                        #if ($column.htmlType == "checkbox")
+                                $column.javaField: [],
+                        #else
+                                $column.javaField: undefined,
+                        #end
+                    #end
+                #end
+            }
+            row.${subJoinColumn.javaField} = this.${subJoinColumn.javaField};
+            this.formData.push(row);
+          },
+          /** Delete button operation */
+          handleDelete(index) {
+            this.formData.splice(index, 1);
+          },
+        #end
+      /** Form validation */
+      validate(){
+        return this.#[[$]]#refs["formRef"].validate();
+      },
+      /** Form value */
+      getData(){
+        return this.formData;
+      }
+    }
+  };
+</script>

@@ -1,0 +1,65 @@
+<template>
+  <Dialog :title="dialogTitle" v-model="dialogVisible">
+    <Form ref="formRef" :schema="allSchemas.formSchema" :rules="rules" v-loading="formLoading" />
+    <template #footer>
+      <el-button @click="submitForm" type="primary" :disabled="formLoading">Yes Set</el-button>
+      <el-button @click="dialogVisible = false">Take Disappear</el-button>
+    </template>
+  </Dialog>
+</template>
+<script setup lang="ts">
+import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}'
+import { rules, allSchemas } from './${classNameVar}.data'
+const { t } = useI18n() // Internationalization
+const message = useMessage() // Message pop-up window
+
+const dialogVisible = ref(false) // Whether to display the pop-up window
+const dialogTitle = ref('') // Popup window title
+const formLoading = ref(false) // The form is loading：1）Data loading during modification；2）Submit button disabled
+const formType = ref('') // Form type：create - Newly added；update - Modify
+const formRef = ref() // Form Ref
+
+/** Open pop-up window */
+const open = async (type: string, id?: number) => {
+  dialogVisible.value = true
+  dialogTitle.value = t('action.' + type)
+  formType.value = type
+  // When modifying，Set data
+  if (id) {
+    formLoading.value = true
+    try {
+      const data = await ${simpleClassName}Api.get${simpleClassName}(id)
+      formRef.value.setValues(data)
+    } finally {
+      formLoading.value = false
+    }
+  }
+}
+defineExpose({ open }) // Provide open Method，Used to open a pop-up window
+
+/** Submit form */
+const emit = defineEmits(['success']) // Definition success Event，Callback used after successful operation
+const submitForm = async () => {
+  // Verify form
+  if (!formRef) return
+  const valid = await formRef.value.getElFormRef().validate()
+  if (!valid) return
+  // Submit request
+  formLoading.value = true
+  try {
+    const data = formRef.value.formModel as ${simpleClassName}Api.${simpleClassName}VO
+    if (formType.value === 'create') {
+      await ${simpleClassName}Api.create${simpleClassName}(data)
+      message.success(t('common.createSuccess'))
+    } else {
+      await ${simpleClassName}Api.update${simpleClassName}(data)
+      message.success(t('common.updateSuccess'))
+    }
+    dialogVisible.value = false
+    // Send operation success event
+    emit('success')
+  } finally {
+    formLoading.value = false
+  }
+}
+</script>

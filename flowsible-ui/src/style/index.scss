@@ -1,0 +1,26 @@
+@import "./transition";
+@import "./element-plus";
+@import "./sidebar";
+@import "./dark";
+
+/* Custom global CssVar */
+:root {
+  /* Left menu expansion、Collapse animation duration */
+  --pure-transition-duration: 0.3s;
+
+  /* Commonborder-color Can be used when needed */
+  --pure-border-color: rgb(5 5 5 / 6%);
+
+  /* switchClosedcolor Can be used when needed */
+  --pure-switch-off-color: #a6a6a6;
+}
+
+/* Gray mode */
+.html-grey {
+  filter: grayscale(100%);
+}
+
+/* Color weakness mode */
+.html-weakness {
+  filter: invert(80%);
+}

@@ -1,0 +1,85 @@
+<template>
+  <!-- Search Task Bar -->
+  <ContentWrap>
+    <Search :schema="allSchemas.searchSchema" @search="setSearchParams" @reset="setSearchParams">
+      <!-- Add new operation buttons -->
+      <template #actionMore>
+        <el-button
+          type="primary"
+          plain
+          @click="openForm('create')"
+          v-hasPermi="['${permissionPrefix}:create']"
+        >
+          <Icon icon="ep:plus" class="mr-5px" /> Newly added
+        </el-button>
+      </template>
+    </Search>
+  </ContentWrap>
+
+  <!-- List -->
+  <ContentWrap>
+    <Table
+      :columns="allSchemas.tableColumns"
+      :data="tableObject.tableList"
+      :loading="tableObject.loading"
+      :pagination="{
+        total: tableObject.total
+      }"
+      v-model:pageSize="tableObject.pageSize"
+      v-model:currentPage="tableObject.currentPage"
+    >
+      <template #action="{ row }">
+        <el-button
+          link
+          type="primary"
+          @click="openForm('update', row.id)"
+          v-hasPermi="['${permissionPrefix}:update']"
+        >
+          Edit
+        </el-button>
+        <el-button
+          link
+          type="danger"
+          v-hasPermi="['${permissionPrefix}:delete']"
+          @click="handleDelete(row.id)"
+        >
+          Delete
+        </el-button>
+      </template>
+    </Table>
+  </ContentWrap>
+
+  <!-- Form pop-up window：Add/Modify -->
+  <${simpleClassName}Form ref="formRef" @success="getList" />
+</template>
+<script setup lang="ts" name="${table.className}">
+import { allSchemas } from './${classNameVar}.data'
+import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}'
+import ${simpleClassName}Form from './${simpleClassName}Form.vue'
+
+// tableObject：Table property object，Get the page size、Number of entries and other attributes
+// tableMethods：Table operation object，Can obtain paging、Delete records and other operations
+// Details can be seen：https://doc.econets.cn/vue3/crud-schema/
+const { tableObject, tableMethods } = useTable({
+  getListApi: ${simpleClassName}Api.get${simpleClassName}Page, // Paging interface
+  delListApi: ${simpleClassName}Api.delete${simpleClassName} // Delete interface
+})
+// Obtain various operations of the table
+const { getList, setSearchParams } = tableMethods
+
+/** Add/Modify operation */
+const formRef = ref()
+const openForm = (type: string, id?: number) => {
+  formRef.value.open(type, id)
+}
+
+/** Delete button operation */
+const handleDelete = (id: number) => {
+  tableMethods.delList(id, false)
+}
+
+/** Initialization **/
+onMounted(() => {
+  getList()
+})
+</script>

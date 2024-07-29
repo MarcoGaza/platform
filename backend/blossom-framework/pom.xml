@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>cn.econets.boot</groupId>
+        <artifactId>blossom</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <packaging>pom</packaging>
+
+    <artifactId>blossom-framework</artifactId>
+    <description>
+        This package is a technology component，Each sub-package，Represents a component。Each component consists of two parts：
+        1. core Package：is the core package of this component
+        2. config Package：This component is based on Spring Configuration
+
+        Technical Components，Also divided into two categories：
+        1. Framework component：and we are familiar with MyBatis、Redis Extension of etc.
+        2. Business Components：Packaging of business-related components，For example, data dictionary、Operation log, etc.。
+        If it is a business component，Maven The name will contain biz
+    </description>
+
+    <modules>
+        <module>blossom-common</module>
+        <module>blossom-spring-boot-starter-web</module>
+        <module>blossom-spring-boot-starter-mybatis</module>
+        <module>blossom-spring-boot-starter-redis</module>
+        <module>blossom-spring-boot-starter-security</module>
+        <module>blossom-spring-boot-starter-test</module>
+
+        <module>blossom-spring-boot-starter-monitor</module>
+        <module>blossom-spring-boot-starter-excel</module>
+        <module>blossom-spring-boot-starter-mq</module>
+        <module>blossom-spring-boot-starter-file</module>
+        <module>blossom-spring-boot-starter-captcha</module>
+        <module>blossom-spring-boot-starter-websocket</module>
+        <module>blossom-spring-boot-starter-job</module>
+        <module>blossom-spring-boot-starter-flowable</module>
+
+        <module>blossom-spring-boot-starter-biz-dict</module>
+        <module>blossom-spring-boot-starter-biz-tenant</module>
+        <module>blossom-spring-boot-starter-biz-data-permission</module>
+        <module>blossom-spring-boot-starter-biz-operatelog</module>
+        <module>blossom-spring-boot-starter-biz-ip</module>
+        <module>blossom-spring-boot-starter-biz-pay</module>
+        <module>blossom-spring-boot-starter-protection</module>
+    </modules>
+</project>

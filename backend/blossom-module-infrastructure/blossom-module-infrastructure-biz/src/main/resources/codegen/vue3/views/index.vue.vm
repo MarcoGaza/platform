@@ -1,0 +1,373 @@
+<template>
+  <ContentWrap>
+    <!-- Search Task Bar -->
+    <el-form
+      class="-mb-15px"
+      :model="queryParams"
+      ref="queryFormRef"
+      :inline="true"
+      label-width="68px"
+    >
+    #foreach($column in $columns)
+        #if ($column.listOperation)
+            #set ($dictType = $column.dictType)
+            #set ($javaField = $column.javaField)
+            #set ($javaType = $column.javaType)
+            #set ($AttrName = $column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+            #set ($comment = $column.columnComment)
+            #set ($dictMethod = "getDictOptions")## Which one to use for calculation dict Dictionary method
+            #if ($javaType == "Integer" || $javaType == "Long" || $javaType == "Byte" || $javaType == "Short")
+                #set ($dictMethod = "getIntDictOptions")
+            #elseif ($javaType == "String")
+                #set ($dictMethod = "getStrDictOptions")
+            #elseif ($javaType == "Boolean")
+                #set ($dictMethod = "getBoolDictOptions")
+            #end
+            #if ($column.htmlType == "input")
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-input
+          v-model="queryParams.${javaField}"
+          placeholder="Please enter${comment}"
+          clearable
+          @keyup.enter="handleQuery"
+          class="!w-240px"
+        />
+      </el-form-item>
+            #elseif ($column.htmlType == "select" || $column.htmlType == "radio")
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-select
+          v-model="queryParams.${javaField}"
+          placeholder="Please select${comment}"
+          clearable
+          class="!w-240px"
+        >
+                #if ("" != $dictType)## Set dictType Data dictionary status
+          <el-option
+            v-for="dict in $dictMethod(DICT_TYPE.$dictType.toUpperCase())"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+                #else## Not set dictType Data dictionary status
+          <el-option label="Please select dictionary generation" value="" />
+                #end
+        </el-select>
+      </el-form-item>
+    #elseif($column.htmlType == "datetime")
+      #if ($column.listOperationCondition != "BETWEEN")## Out of range
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-date-picker
+          v-model="queryParams.${javaField}"
+          value-format="YYYY-MM-DD"
+          type="date"
+          placeholder="Select${comment}"
+          clearable
+          class="!w-240px"
+        />
+      </el-form-item>
+      #else## Range
+      <el-form-item label="${comment}" prop="${javaField}">
+        <el-date-picker
+          v-model="queryParams.${javaField}"
+          value-format="YYYY-MM-DD HH:mm:ss"
+          type="daterange"
+          start-placeholder="Start Date"
+          end-placeholder="End Date"
+          :default-time="[new Date('1 00:00:00'), new Date('1 23:59:59')]"
+          class="!w-240px"
+        />
+      </el-form-item>
+      #end
+    #end
+    #end
+    #end
+      <el-form-item>
+        <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> Search</el-button>
+        <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> Reset</el-button>
+        <el-button
+          type="primary"
+          plain
+          @click="openForm('create')"
+          v-hasPermi="['${permissionPrefix}:create']"
+        >
+          <Icon icon="ep:plus" class="mr-5px" /> Newly added
+        </el-button>
+        <el-button
+          type="success"
+          plain
+          @click="handleExport"
+          :loading="exportLoading"
+          v-hasPermi="['${permissionPrefix}:export']"
+        >
+          <Icon icon="ep:download" class="mr-5px" /> Export
+        </el-button>
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+        <el-button type="danger" plain @click="toggleExpandAll">
+          <Icon icon="ep:sort" class="mr-5px" /> Expand/Fold
+        </el-button>
+#end
+      </el-form-item>
+    </el-form>
+  </ContentWrap>
+
+  <!-- List -->
+  <ContentWrap>
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType == 11 && $subTables && $subTables.size() > 0 )
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      highlight-current-row
+      @current-change="handleCurrentChange"
+    >
+## Special：Tree table exclusive logic
+#elseif ( $table.templateType == 2 )
+    <el-table
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      row-key="id"
+      :default-expand-all="isExpandAll"
+      v-if="refreshTable"
+    >
+#else
+    <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
+#end
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType == 12 && $subTables && $subTables.size() > 0 )
+      <!-- List of subtables -->
+      <el-table-column type="expand">
+        <template #default="scope">
+          <el-tabs model-value="$subClassNameVars.get(0)">
+            #foreach ($subTable in $subTables)
+              #set ($index = $foreach.count - 1)
+              #set ($subClassNameVar = $subClassNameVars.get($index))
+              #set ($subSimpleClassName = $subSimpleClassNames.get($index))
+              #set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+            <el-tab-pane label="${subTable.classComment}" name="$subClassNameVar">
+              <${subSimpleClassName}List :${subJoinColumn_strikeCase}="scope.row.id" />
+            </el-tab-pane>
+            #end
+          </el-tabs>
+        </template>
+      </el-table-column>
+#end
+      #foreach($column in $columns)
+      #if ($column.listOperationResult)
+        #set ($dictType=$column.dictType)
+        #set ($javaField = $column.javaField)
+        #set ($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+        #set ($comment=$column.columnComment)
+        #if ($column.javaType == "LocalDateTime")## Time type
+      <el-table-column
+        label="${comment}"
+        align="center"
+        prop="${javaField}"
+        :formatter="dateFormatter"
+        width="180px"
+      />
+        #elseif($column.dictType && "" != $column.dictType)## Data dictionary
+      <el-table-column label="${comment}" align="center" prop="${javaField}">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.$dictType.toUpperCase()" :value="scope.row.${column.javaField}" />
+        </template>
+      </el-table-column>
+        #else
+      <el-table-column label="${comment}" align="center" prop="${javaField}" />
+        #end
+      #end
+    #end
+      <el-table-column label="Operation" align="center">
+        <template #default="scope">
+          <el-button
+            link
+            type="primary"
+            @click="openForm('update', scope.row.id)"
+            v-hasPermi="['${permissionPrefix}:update']"
+          >
+            Edit
+          </el-button>
+          <el-button
+            link
+            type="danger"
+            @click="handleDelete(scope.row.id)"
+            v-hasPermi="['${permissionPrefix}:delete']"
+          >
+            Delete
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <!-- Pagination -->
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
+  </ContentWrap>
+
+  <!-- Form pop-up window：Add/Modify -->
+  <${simpleClassName}Form ref="formRef" @success="getList" />
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType == 11 && $subTables && $subTables.size() > 0 )
+  <!-- List of subtables -->
+  <ContentWrap>
+    <el-tabs model-value="$subClassNameVars.get(0)">
+      #foreach ($subTable in $subTables)
+        #set ($index = $foreach.count - 1)
+        #set ($subClassNameVar = $subClassNameVars.get($index))
+        #set ($subSimpleClassName = $subSimpleClassNames.get($index))
+        #set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+      <el-tab-pane label="${subTable.classComment}" name="$subClassNameVar">
+        <${subSimpleClassName}List :${subJoinColumn_strikeCase}="currentRow.id" />
+      </el-tab-pane>
+      #end
+    </el-tabs>
+  </ContentWrap>
+#end
+</template>
+
+<script setup lang="ts">
+import { getIntDictOptions, getStrDictOptions, getBoolDictOptions, DICT_TYPE } from '@/utils/dict'
+import { dateFormatter } from '@/utils/formatTime'
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+import { handleTree } from '@/utils/tree'
+#end
+import download from '@/utils/download'
+import * as ${simpleClassName}Api from '@/api/${table.moduleName}/${table.businessName}'
+import ${simpleClassName}Form from './${simpleClassName}Form.vue'
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType != 10 )
+#foreach ($subSimpleClassName in $subSimpleClassNames)
+import ${subSimpleClassName}List from './components/${subSimpleClassName}List.vue'
+#end
+#end
+
+defineOptions({ name: '${table.className}' })
+
+const message = useMessage() // Message pop-up window
+const { t } = useI18n() // Internationalization
+
+const loading = ref(true) // Loading list
+const list = ref([]) // List data
+## Special：Tree table exclusive logic（Trees do not require paging interfaces）
+#if ( $table.templateType != 2 )
+const total = ref(0) // Total number of pages in the list
+#end
+const queryParams = reactive({
+## Special：Tree table exclusive logic（Tree does not need paging interface）
+#if ( $table.templateType != 2 )
+  pageNo: 1,
+  pageSize: 10,
+#end
+  #foreach ($column in $columns)
+    #if ($column.listOperation)
+      #if ($column.listOperationCondition != 'BETWEEN')
+  $column.javaField: undefined,
+  #end
+      #if ($column.htmlType == "datetime" || $column.listOperationCondition == "BETWEEN")
+  $column.javaField: [],
+      #end
+    #end
+  #end
+})
+const queryFormRef = ref() // Search form
+const exportLoading = ref(false) // Export loading
+
+/** Query list */
+const getList = async () => {
+  loading.value = true
+  try {
+## Special：Tree table exclusive logic（Trees do not require paging interfaces）
+  #if ( $table.templateType == 2 )
+    const data = await ${simpleClassName}Api.get${simpleClassName}List(queryParams)
+    list.value = handleTree(data, 'id', '${treeParentColumn.javaField}')
+  #else
+    const data = await ${simpleClassName}Api.get${simpleClassName}Page(queryParams)
+    list.value = data.list
+    total.value = data.total
+  #end
+  } finally {
+    loading.value = false
+  }
+}
+
+/** Search button operation */
+const handleQuery = () => {
+  queryParams.pageNo = 1
+  getList()
+}
+
+/** Reset button operation */
+const resetQuery = () => {
+  queryFormRef.value.resetFields()
+  handleQuery()
+}
+
+/** Add/Modify operation */
+const formRef = ref()
+const openForm = (type: string, id?: number) => {
+  formRef.value.open(type, id)
+}
+
+/** Delete button operation */
+const handleDelete = async (id: number) => {
+  try {
+    // Second confirmation of deletion
+    await message.delConfirm()
+    // Initiate deletion
+    await ${simpleClassName}Api.delete${simpleClassName}(id)
+    message.success(t('common.delSuccess'))
+    // Refresh list
+    await getList()
+  } catch {}
+}
+
+/** Export button operation */
+const handleExport = async () => {
+  try {
+    // Second confirmation of export
+    await message.exportConfirm()
+    // Initiate export
+    exportLoading.value = true
+    const data = await ${simpleClassName}Api.export${simpleClassName}(queryParams)
+    download.excel(data, '${table.classComment}.xls')
+  } catch {
+  } finally {
+    exportLoading.value = false
+  }
+}
+## Special：Master and sub-table exclusive logic
+#if ( $table.templateType == 11 )
+
+/** Selected row operation */
+const currentRow = ref({}) // Selected row
+const handleCurrentChange = (row) => {
+  currentRow.value = row
+}
+#end
+## Special：Tree table exclusive logic
+#if ( $table.templateType == 2 )
+
+/** Expand/Folding operation */
+const isExpandAll = ref(true) // Whether to expand，Expand all by default
+const refreshTable = ref(true) // Re-render table status
+const toggleExpandAll = async () => {
+  refreshTable.value = false
+  isExpandAll.value = !isExpandAll.value
+  await nextTick()
+  refreshTable.value = true
+}
+#end
+
+/** Initialization **/
+onMounted(() => {
+  getList()
+})
+</script>

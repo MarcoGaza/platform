@@ -1,0 +1,39 @@
+### Request /mp/tag/create Interface => Success
+POST {{baseUrl}}/mp/tag/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "accountId": "1",
+  "name": "Test"
+}
+
+### Request /mp/tag/update Interface => Success
+PUT {{baseUrl}}/mp/tag/update
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "id": "3",
+  "name": "Testing tags"
+}
+
+### Request /mp/tag/delete Interface => Success
+DELETE {{baseUrl}}/mp/tag/delete?id=3
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Request /mp/tag/page Interface => Success
+GET {{baseUrl}}/mp/tag/page?accountId=1&pageNo=1&pageSize=10
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Request /mp/tag/sync Interface => Success
+POST {{baseUrl}}/mp/tag/sync?accountId=1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}

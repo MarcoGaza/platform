@@ -1,0 +1,111 @@
+import request from '@/config/axios'
+#set ($baseURL = "/${table.moduleName}/${simpleClassName_strikeCase}")
+
+export interface ${simpleClassName}VO {
+#foreach ($column in $columns)
+#if ($column.createOperation || $column.updateOperation)
+#if(${column.javaType.toLowerCase()} == "long" || ${column.javaType.toLowerCase()} == "integer" || ${column.javaType.toLowerCase()} == "short" || ${column.javaType.toLowerCase()} == "double" || ${column.javaType.toLowerCase()} == "bigdecimal")
+  ${column.javaField}: number
+#elseif(${column.javaType.toLowerCase()} == "date" || ${column.javaType.toLowerCase()} == "localdatetime")
+  ${column.javaField}: Date
+#else
+  ${column.javaField}: ${column.javaType.toLowerCase()}
+#end
+#end
+#end
+}
+
+#if ( $table.templateType != 2 )
+// Query${table.classComment}Pagination
+export const get${simpleClassName}Page = async (params) => {
+  return await request.get({ url: `${baseURL}/page`, params })
+}
+#else
+// Query${table.classComment}List
+export const get${simpleClassName}List = async (params) => {
+  return await request.get({ url: `${baseURL}/list`, params })
+}
+#end
+
+// Query${table.classComment}Details
+export const get${simpleClassName} = async (id: number) => {
+  return await request.get({ url: `${baseURL}/get?id=` + id })
+}
+
+// Newly added${table.classComment}
+export const create${simpleClassName} = async (data: ${simpleClassName}VO) => {
+  return await request.post({ url: `${baseURL}/create`, data })
+}
+
+// Modify${table.classComment}
+export const update${simpleClassName} = async (data: ${simpleClassName}VO) => {
+  return await request.put({ url: `${baseURL}/update`, data })
+}
+
+// Delete${table.classComment}
+export const delete${simpleClassName} = async (id: number) => {
+  return await request.delete({ url: `${baseURL}/delete?id=` + id })
+}
+
+// Export${table.classComment} Excel
+export const export${simpleClassName} = async (params) => {
+  return await request.download({ url: `${baseURL}/export-excel`, params })
+}
+## Special：Master and sub-table exclusive logic
+#foreach ($subTable in $subTables)
+#set ($index = $foreach.count - 1)
+#set ($subSimpleClassName = $subSimpleClassNames.get($index))
+#set ($subPrimaryColumn = $subPrimaryColumns.get($index))##Current primary Field
+#set ($subJoinColumn = $subJoinColumns.get($index))##Current join Field
+#set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+#set ($subSimpleClassName_strikeCase = $subSimpleClassName_strikeCases.get($index))
+#set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+#set ($subClassNameVar = $subClassNameVars.get($index))
+
+// ==================== Subtable（$subTable.classComment） ====================
+## Situation 1：MASTER_ERP Time，Need to query the sub-tables of the pages
+#if ( $table.templateType == 11 )
+
+// Get${subTable.classComment}Pagination
+export const get${subSimpleClassName}Page = async (params) => {
+  return await request.get({ url: `${baseURL}/${subSimpleClassName_strikeCase}/page`, params })
+}
+## Situation 2：Non MASTER_ERP Time，Need to list and query subtables
+#else
+  #if ( $subTable.subJoinMany )
+
+// Get${subTable.classComment}List
+export const get${subSimpleClassName}ListBy${SubJoinColumnName} = async (${subJoinColumn.javaField}) => {
+  return await request.get({ url: `${baseURL}/${subSimpleClassName_strikeCase}/list-by-${subJoinColumn_strikeCase}?${subJoinColumn.javaField}=` + ${subJoinColumn.javaField} })
+}
+  #else
+
+// Get${subTable.classComment}
+export const get${subSimpleClassName}By${SubJoinColumnName} = async (${subJoinColumn.javaField}) => {
+  return await request.get({ url: `${baseURL}/${subSimpleClassName_strikeCase}/get-by-${subJoinColumn_strikeCase}?${subJoinColumn.javaField}=` + ${subJoinColumn.javaField} })
+}
+  #end
+#end
+## Special：MASTER_ERP Time，Supports single addition、Modify、Delete operation
+#if ( $table.templateType == 11 )
+// New${subTable.classComment}
+export const create${subSimpleClassName} = async (data) => {
+  return await request.post({ url: `${baseURL}/${subSimpleClassName_strikeCase}/create`, data })
+}
+
+// Modify${subTable.classComment}
+export const update${subSimpleClassName} = async (data) => {
+  return await request.put({ url: `${baseURL}/${subSimpleClassName_strikeCase}/update`, data })
+}
+
+// Delete${subTable.classComment}
+export const delete${subSimpleClassName} = async (id: number) => {
+  return await request.delete({ url: `${baseURL}/${subSimpleClassName_strikeCase}/delete?id=` + id })
+}
+
+// Get${subTable.classComment}
+export const get${subSimpleClassName} = async (id: number) => {
+  return await request.get({ url: `${baseURL}/${subSimpleClassName_strikeCase}/get?id=` + id })
+}
+#end
+#end

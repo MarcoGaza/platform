@@ -1,0 +1,124 @@
+import type { CrudSchema } from '@/hooks/web/useCrudSchemas'
+import { dateFormatter } from '@/utils/formatTime'
+
+// Form validation
+export const rules = reactive({
+#foreach ($column in $columns)
+#if (($column.createOperation || $column.updateOperation) && !$column.nullable && !${column.primaryKey})## Create or update operation && Requires non-empty && Non-primary key
+#set($comment=$column.columnComment)
+  $column.javaField: [required],
+#end
+#end
+})
+
+// CrudSchema https://doc.econets.cn/vue3/crud-schema/
+const crudSchemas = reactive<CrudSchema[]>([
+#foreach($column in $columns)
+#if ($column.listOperation || $column.listOperationResult || $column.createOperation || $column.updateOperation)
+#set ($dictType = $column.dictType)
+#set ($javaField = $column.javaField)
+#set ($javaType = $column.javaType)
+  {
+    label: '${column.columnComment}',
+    field: '${column.javaField}',
+## ========= Dictionary part =========
+    #if ("" != $dictType)## With data dictionary
+    dictType: DICT_TYPE.$dictType.toUpperCase(),
+        #if ($javaType == "Integer" || $javaType == "Long" || $javaType == "Byte" || $javaType == "Short")
+    dictClass: 'number',
+        #elseif ($javaType == "String")
+    dictClass: 'string',
+        #elseif ($javaType == "Boolean")
+    dictClass: 'boolean',
+        #end
+    #end
+## ========= Table Table Part =========
+    #if (!$column.listOperationResult)
+    isTable: false,
+    #else
+      #if ($column.htmlType == "datetime")
+    formatter: dateFormatter,
+      #end
+    #end
+## ========= Search Table Part =========
+    #if ($column.listOperation)
+    isSearch: true,
+        #if ($column.htmlType == "datetime")
+    search: {
+      component: 'DatePicker',
+      componentProps: {
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
+        type: 'daterange',
+        defaultTime: [new Date('1 00:00:00'), new Date('1 23:59:59')]
+      }
+    },
+        #end
+    #end
+## ========= Form Form part =========
+    #if ((!$column.createOperation && !$column.updateOperation) || $column.primaryKey)
+    isForm: false,
+    #else
+        #if($column.htmlType == "imageUpload")## Upload pictures
+    form: {
+      component: 'UploadImg'
+    },
+        #elseif($column.htmlType == "fileUpload")## File upload
+    form: {
+      component: 'UploadFile'
+    },
+        #elseif($column.htmlType == "editor")## Text Editor
+    form: {
+      component: 'Editor',
+      componentProps: {
+        valueHtml: '',
+        height: 200
+      }
+    },
+        #elseif($column.htmlType == "select")## Drop-down box
+    form: {
+      component: 'SelectV2'
+    },
+        #elseif($column.htmlType == "checkbox")## Multiple selection boxes
+    form: {
+      component: 'Checkbox'
+    },
+        #elseif($column.htmlType == "radio")## Radio box
+    form: {
+      component: 'Radio'
+    },
+        #elseif($column.htmlType == "datetime")## Time frame
+    form: {
+      component: 'DatePicker',
+      componentProps: {
+        type: 'datetime',
+        valueFormat: 'x'
+      }
+    },
+        #elseif($column.htmlType == "textarea")## Text box
+    form: {
+      component: 'Input',
+      componentProps: {
+        type: 'textarea',
+        rows: 4
+      },
+      colProps: {
+        span: 24
+      }
+    },
+        #elseif(${javaType.toLowerCase()} == "long" || ${javaType.toLowerCase()} == "integer")## Text box
+    form: {
+      component: 'InputNumber',
+      value: 0
+    },
+        #end
+    #end
+  },
+#end
+#end
+  {
+    label: 'Operation',
+    field: 'action',
+    isForm: false
+  }
+])
+export const { allSchemas } = useCrudSchemas(crudSchemas)

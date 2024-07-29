@@ -1,0 +1,147 @@
+import request from '@/utils/request'
+#set ($baseURL = "/${table.moduleName}/${simpleClassName_strikeCase}")
+
+// Create${table.classComment}
+export function create${simpleClassName}(data) {
+  return request({
+    url: '${baseURL}/create',
+    method: 'post',
+    data: data
+  })
+}
+
+// Update${table.classComment}
+export function update${simpleClassName}(data) {
+  return request({
+    url: '${baseURL}/update',
+    method: 'put',
+    data: data
+  })
+}
+
+// Delete${table.classComment}
+export function delete${simpleClassName}(id) {
+  return request({
+    url: '${baseURL}/delete?id=' + id,
+    method: 'delete'
+  })
+}
+
+// Get${table.classComment}
+export function get${simpleClassName}(id) {
+  return request({
+    url: '${baseURL}/get?id=' + id,
+    method: 'get'
+  })
+}
+
+#if ( $table.templateType != 2 )
+// Get${table.classComment}Pagination
+export function get${simpleClassName}Page(params) {
+  return request({
+    url: '${baseURL}/page',
+    method: 'get',
+    params
+  })
+}
+#else
+// Get${table.classComment}List
+export function get${simpleClassName}List(params) {
+  return request({
+    url: '${baseURL}/list',
+    method: 'get',
+    params
+  })
+}
+#end
+// Export${table.classComment} Excel
+export function export${simpleClassName}Excel(params) {
+  return request({
+    url: '${baseURL}/export-excel',
+    method: 'get',
+    params,
+    responseType: 'blob'
+  })
+}
+## Special：Master and sub-table exclusive logic TODO The following method【Space】Not quite right
+#foreach ($subTable in $subTables)
+  #set ($index = $foreach.count - 1)
+  #set ($subSimpleClassName = $subSimpleClassNames.get($index))
+  #set ($subPrimaryColumn = $subPrimaryColumns.get($index))##Current primary Field
+  #set ($subJoinColumn = $subJoinColumns.get($index))##Current join Field
+  #set ($SubJoinColumnName = $subJoinColumn.javaField.substring(0,1).toUpperCase() + ${subJoinColumn.javaField.substring(1)})##Capitalize the first letter
+  #set ($subSimpleClassName_strikeCase = $subSimpleClassName_strikeCases.get($index))
+  #set ($subJoinColumn_strikeCase = $subJoinColumn_strikeCases.get($index))
+  #set ($subClassNameVar = $subClassNameVars.get($index))
+
+// ==================== Subtable（$subTable.classComment） ====================
+  ## Situation 1：MASTER_ERP Time，Need to query the sub-tables of the pages
+  #if ( $table.templateType == 11 )
+
+  // Get${subTable.classComment}Pagination
+  export function get${subSimpleClassName}Page(params) {
+    return request({
+      url: '${baseURL}/${subSimpleClassName_strikeCase}/page',
+      method: 'get',
+      params
+    })
+  }
+    ## Situation 2：Non MASTER_ERP Time，Need to list subtables
+  #else
+    #if ( $subTable.subJoinMany )
+
+    // Get${subTable.classComment}List
+    export function get${subSimpleClassName}ListBy${SubJoinColumnName}(${subJoinColumn.javaField}) {
+      return request({
+        url: `${baseURL}/${subSimpleClassName_strikeCase}/list-by-${subJoinColumn_strikeCase}?${subJoinColumn.javaField}=` + ${subJoinColumn.javaField},
+        method: 'get'
+      })
+    }
+    #else
+
+    // Get${subTable.classComment}
+    export function get${subSimpleClassName}By${SubJoinColumnName}(${subJoinColumn.javaField}) {
+      return request({
+        url: `${baseURL}/${subSimpleClassName_strikeCase}/get-by-${subJoinColumn_strikeCase}?${subJoinColumn.javaField}=` + ${subJoinColumn.javaField},
+        method: 'get'
+      })
+    }
+    #end
+  #end
+  ## Special：MASTER_ERP Time，Supports single addition、Modify、Delete operation
+  #if ( $table.templateType == 11 )
+  // New${subTable.classComment}
+  export function create${subSimpleClassName}(data) {
+    return request({
+      url: `${baseURL}/${subSimpleClassName_strikeCase}/create`,
+      method: 'post',
+      data
+    })
+  }
+
+  // Modify${subTable.classComment}
+  export function update${subSimpleClassName}(data) {
+    return request({
+      url: `${baseURL}/${subSimpleClassName_strikeCase}/update`,
+      method: 'post',
+      data
+    })
+  }
+
+  // Delete${subTable.classComment}
+  export function delete${subSimpleClassName}(id) {
+    return request({
+      url: `${baseURL}/${subSimpleClassName_strikeCase}/delete?id=` + id,
+      method: 'delete'
+    })
+  }
+
+  // Get${subTable.classComment}
+  export function get${subSimpleClassName}(id) {
+    return request({
+      url: `${baseURL}/${subSimpleClassName_strikeCase}/get?id=` + id,
+      method: 'get'
+    })
+  }
+  #end
+#end

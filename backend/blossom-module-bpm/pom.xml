@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>blossom</artifactId>
+        <groupId>cn.econets.boot</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>blossom-module-bpm</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        bpm Book now，Business Process Management（Business Process Management），We put the workflow function。
+        For example：Process definition、Form Configuration、Audit Center（My application、My To-Do、My done）Wait
+        bpm Explanation：https://baike.baidu.com/item/BPM/1933
+
+        Workflow based on Flowable 6 Realization，Divided into process definitions、Process Form、Process instance、Process task and other functional modules。
+    </description>
+
+    <modules>
+        <module>blossom-module-bpm-api</module>
+        <module>blossom-module-bpm-biz</module>
+    </modules>
+
+</project>

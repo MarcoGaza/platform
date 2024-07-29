@@ -1,0 +1,4 @@
+### Get goods SPU Details
+GET {{baseUrl}}/product/spu/get-detail?id=4
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}

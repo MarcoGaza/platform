@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="${basePackage}.module.${table.moduleName}.dal.mysql.${table.businessName}.${table.className}Mapper">
+
+    <!--
+        Under normal circumstances，Use as much as possible Mapper Proceed CRUD Just add, delete, modify and check。
+        Unsatisfactory scenes，For example, multi-table association query，Only used XML Written SQL。
+        The code generator only generates temporarily Mapper XML The file itself，More recommendations MybatisX Rapidly develop plugins to generate queries。
+     -->
+
+</mapper>

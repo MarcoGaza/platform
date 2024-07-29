@@ -1,0 +1,4 @@
+## Subtable erp Japanese inner Use similar list List，The main differences are two points：
+## 1）inner Use list No paging，erp Use page Pagination
+## 2）erp Support adding a single subtable、Modify、Delete，inner Not supported
+#parse("codegen/vue3/views/components/list_sub_erp.vue.vm")

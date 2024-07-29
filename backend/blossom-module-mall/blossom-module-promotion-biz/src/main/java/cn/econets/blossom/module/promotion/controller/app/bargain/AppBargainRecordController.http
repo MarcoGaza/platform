@@ -1,0 +1,9 @@
+### /promotion/bargain-record/create Create bargaining record
+POST {{appApi}}/promotion/bargain-record/create
+Authorization: Bearer {{appToken}}
+Content-Type: application/json
+tenant-id: {{appTenentId}}
+
+{
+  "activityId": 1
+}

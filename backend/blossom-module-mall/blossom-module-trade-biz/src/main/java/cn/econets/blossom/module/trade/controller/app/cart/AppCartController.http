@@ -1,0 +1,42 @@
+### Request /trade/cart/add Interface => Success
+POST {{appApi}}/trade/cart/add
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+Content-Type: application/json
+
+{
+  "skuId": 1,
+  "count": 10,
+  "addStatus": true
+}
+
+### Request /trade/cart/update Interface => Success
+PUT {{appApi}}/trade/cart/update
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+Content-Type: application/json
+
+{
+  "id": 35,
+  "count": 5
+}
+
+### Request /trade/cart/delete Interface => Success
+DELETE {{appApi}}/trade/cart/delete?ids=1
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+### Request /trade/cart/get-count Interface => Success
+GET {{appApi}}/trade/cart/get-count
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+### Request /trade/cart/get-count-map Interface => Success
+GET {{appApi}}/trade/cart/get-count-map
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}
+
+### Request /trade/cart/list Interface => Success
+GET {{appApi}}/trade/cart/list
+tenant-id: {{appTenentId}}
+Authorization: Bearer {{appToken}}

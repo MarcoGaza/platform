@@ -1,0 +1,33 @@
+### Request /mp/message/page Interface => Success
+GET {{baseUrl}}/mp/message/page?accountId=1&pageNo=1&pageSize=10
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+### Request /mp/message/send Interface => Success（Text）
+POST {{baseUrl}}/mp/message/send
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "userId": 3,
+  "type": "text",
+  "content": "Test message"
+}
+
+### Request /mp/message/send Interface => Success（Music）
+POST {{baseUrl}}/mp/message/send
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "userId": 3,
+  "type": "music",
+  "title": "Test music title",
+  "description": "Test music content",
+  "musicUrl": "https://www.econets.cn/xx.mp3",
+  "hqMusicUrl": "https://www.econets.cn/xx_high.mp3",
+  "thumbMediaId": "s98Iveeg9vDVFwa9q0u8-zSfdKe3xIzAm7wCrFE4WKGPIo4d9qAhtC-n6qvnyWyH"
+}

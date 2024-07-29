@@ -1,0 +1,229 @@
+server:
+  port: 58080
+
+--- #################### Database related configuration ####################
+spring:
+  config:
+    import: optional:file:.env/db.properties
+
+  # Data source configuration item
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration # Default test Environment，Not enabled Quartz Automatic configuration
+      - de.codecentric.boot.admin.server.config.AdminServerAutoConfiguration # Disable Spring Boot Admin of Server Automatic configuration
+      - de.codecentric.boot.admin.server.ui.config.AdminServerUiAutoConfiguration # Disable Spring Boot Admin of Server UI Automatic configuration
+      - de.codecentric.boot.admin.client.config.SpringBootAdminClientAutoConfiguration # Disable Spring Boot Admin of Client Automatic configuration
+  datasource:
+    druid: # Druid 【Monitoring】Related global configuration
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow: # Set whitelist，If left blank, all access is allowed
+        url-pattern: /druid/*
+        login-username: # Console management username and password
+        login-password:
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true # Slow SQL Record
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic: # Multiple data source configuration
+      druid: # Druid 【Connection pool】Related global configuration
+        initial-size: 5 # Initial number of connections
+        min-idle: 10 # Minimum number of connection pools
+        max-active: 20 # Maximum number of connection pools
+        max-wait: 600000 # Configure the timeout for waiting for connection，Unit：milliseconds
+        time-between-eviction-runs-millis: 60000 # Configure the interval for detection，Detect idle connections that need to be closed，Unit：Milliseconds
+        min-evictable-idle-time-millis: 300000 # Configure the minimum survival time of a connection in the pool，Unit：Milliseconds
+        max-evictable-idle-time-millis: 900000 # Configure the maximum survival time of a connection in the pool，Unit：milliseconds
+        validation-query: SELECT 1 # Configure to detect whether the connection is valid
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+      primary: master
+      datasource:
+        master:
+          name: econets-vue
+          url: jdbc:mysql://${HOST}:3306/${spring.datasource.dynamic.datasource.master.name}?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8&allowMultiQueries=true&nullCatalogMeansCurrent=true&autoReconnect=true&failOverReadOnly=false&useSSL=false
+          driver-class-name: com.mysql.jdbc.Driver
+          username: ${USERNAME}
+          password: ${PASSWORD}
+        slave: # Simulate slave library，You can modify it according to your needs # Simulate slave library，You can modify it according to your needs
+          name: econets-vue
+          url: jdbc:mysql://${HOST}:3306/${spring.datasource.dynamic.datasource.slave.name}?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8&allowMultiQueries=true&nullCatalogMeansCurrent=true&autoReconnect=true&failOverReadOnly=false&useSSL=false
+          driver-class-name: com.mysql.jdbc.Driver
+          username: ${USERNAME}
+          password: ${PASSWORD}
+
+  # Redis Configuration。Redisson The default configuration is sufficient，No tuning is usually required
+  redis:
+    database: 1 # Database Index
+    host: 120.24.75.31 # Address
+    port: 5379 # Port
+    # RedisServer connection password（Default is empty）
+    password: ${REDIS-PASSWORD}
+
+--- #################### Scheduled task related configuration ####################
+# Quartz Configuration item，Corresponding QuartzProperties Configuration Class
+spring:
+  quartz:
+    auto-startup: true # Test environment，Need to be enabled Job
+    scheduler-name: schedulerName # Scheduler Name。Default is schedulerName
+    job-store-type: jdbc # Job Memory Type。Default is memory Indicates memory，Optional jdbc Use database。
+    wait-for-jobs-to-complete-on-shutdown: true # When the application is closed，Whether to wait for the scheduled task to complete。Default is false ，Recommended setting is true
+    properties: # Add Quartz Scheduler Additional attributes，More to see http://www.quartz-scheduler.org/documentation/2.4.0-SNAPSHOT/configuration.html Document
+      org:
+        quartz:
+          # Scheduler Related configuration
+          scheduler:
+            instanceName: schedulerName
+            instanceId: AUTO # Automatically generated instance ID
+          # JobStore Related configuration
+          jobStore:
+            # JobStore Implementation class。Visible blog：https://blog.csdn.net/weixin_42458219/article/details/122247162
+            class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
+            isClustered: true # It is cluster mode
+            clusterCheckinInterval: 15000 # Cluster check frequency，Unit：Milliseconds。Default is 15000，That is 15 seconds
+            misfireThreshold: 60000 # misfire Threshold，Unit：milliseconds。
+          # Thread pool related configuration
+          threadPool:
+            threadCount: 25 # Thread pool size。Default is 10 。
+            threadPriority: 5 # Thread priority
+            class: org.quartz.simpl.SimpleThreadPool # Thread pool type
+    jdbc: # Use JDBC of JobStore When，JDBC Configuration
+      initialize-schema: NEVER # Whether to use automatically SQL Initialization Quartz Table structure。Set it here never ，We manually create the table structure。
+
+--- #################### Message queue related ####################
+# rocketmq Configuration item，Corresponding RocketMQProperties Configuration Class
+rocketmq:
+  name-server: 127.0.0.1:9876 # RocketMQ Namesrv
+
+spring:
+  # RabbitMQ Configuration item，Corresponding RabbitProperties Configuration Class
+  rabbitmq:
+    host: 127.0.0.1 # RabbitMQ Service address
+    port: 5672 # RabbitMQ Service port
+    username: guest # RabbitMQ Service Account
+    password: guest # RabbitMQ Service password
+  # Kafka Configuration item，Corresponding KafkaProperties Configuration Class
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092 # Specify Kafka Broker Address，You can set multiple，Separate by commas
+
+--- #################### Service guarantee related configuration ####################
+# Lock4j Configuration item
+lock4j:
+  acquire-timeout: 3000 # Get the timeout of distributed lock，Default is 3000 milliseconds
+  expire: 30000 # Distributed lock timeout，Default is 30 milliseconds
+
+# Resilience4j Configuration item
+resilience4j:
+  ratelimiter:
+    instances:
+      backendA:
+        limit-for-period: 1 # In each cycle，Number of requests allowed。Default is 50
+        limit-refresh-period: 60s # Duration of each cycle，Unit：Microseconds。Default is 500
+        timeout-duration: 1s # When the flow is limited，Blocking waiting time，Unit：Microseconds。Default is 5s
+        register-health-indicator: true # Register to health monitoring
+
+--- #################### Monitoring related configuration ####################
+
+# Spring Boot Admin Configuration item
+spring:
+  boot:
+    admin:
+      # Spring Boot Admin Client Client related configuration
+      client:
+        url: http://127.0.0.1:${server.port}/${spring.boot.admin.context-path} # Settings Spring Boot Admin Server Address
+        instance:
+          service-host-type: IP # When registering an instance，Priority use IP [IP, HOST_NAME, CANONICAL_HOST_NAME]
+      # Spring Boot Admin Server Server-side configuration
+      context-path: /admin # Configuration Spring
+
+# Log file configuration
+logging:
+  file:
+    name: ${user.home}/logs/${spring.application.name}.log # Log file name，Full path
+  level:
+    # Configure your own writing MyBatis Mapper Print log
+    cn.econets.blossom.module.bpm.dal.mysql: debug
+    cn.econets.blossom.module.infrastructure.dal.mysql: debug
+    cn.econets.blossom.module.infrastructure.dal.mysql.job.JobLogMapper: INFO # Configuration JobLogMapper The log level is info
+    cn.econets.blossom.module.infrastructure.dal.mysql.file.FileConfigMapper: INFO # Configuration FileConfigMapper The log level is info
+    cn.econets.blossom.module.system.dal.mysql: debug
+    cn.econets.blossom.module.system.dal.mysql.sensitiveword.SensitiveWordMapper: INFO # Configuration SensitiveWordMapper The log level is info
+    cn.econets.blossom.module.system.dal.mysql.sms.SmsChannelMapper: INFO # Configuration SmsChannelMapper The log level is info
+    cn.econets.blossom.module.tool.dal.mysql: debug
+
+debug: false
+
+--- #################### WeChat public account related configuration ####################
+wx: # See https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-starters/wx-java-mp-spring-boot-starter/README.md Document
+  mp:
+    # Public Account Configuration(Required)
+    app-id: wx041349c6f39b268b
+    secret: 5abee519483bc9f8cb37ce280e814bd0
+    # Storage Configuration，Solved AccessToken Cross-node sharing
+    config-storage:
+      type: RedisTemplate # Adopt RedisTemplate Operation Redis，will automatically start from Spring Get
+      key-prefix: wx # Redis Key Prefix
+      http-client-type: HttpClient # Adopt HttpClient Request WeChat public account platform
+  miniapp: # Mini program configuration（Required），See https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-starters/wx-java-miniapp-spring-boot-starter/README.md Document
+    appid: wx63c280fe3248a3e7
+    secret: 6f270509224a7ae1296bbf1c8cb97aed
+    config-storage:
+      type: RedisTemplate # Adopt RedisTemplate Operation Redis，will automatically start from Spring Get
+      key-prefix: wa # Redis Key Prefix
+      http-client-type: HttpClient # Adopt HttpClient Request WeChat public account platform
+
+--- #################### Related configuration ####################
+application:
+  access-log: # Access log configuration items
+    enable: true
+  error-code: # Error code related configuration items
+    enable: true
+  security:
+    mock-enable: true
+  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E # QQ Key to the map https://lbs.qq.com/service/staticV2/staticGuide/staticDoc
+  websocket:
+    enable: true # websocketSwitch
+    path: /infra/ws # Path
+    sender-type: local # Type of message sent，Optional value is local、redis、rocketmq、kafka、rabbitmq
+    sender-rocketmq:
+      topic: ${spring.application.name}-websocket # Message sent RocketMQ Topic
+      consumer-group: ${spring.application.name}-websocket-consumer # Message sent RocketMQ Consumer Group
+    sender-rabbitmq:
+      exchange: ${spring.application.name}-websocket-exchange # Message sent RabbitMQ Exchange
+      queue: ${spring.application.name}-websocket-queue # Message sent RabbitMQ Queue
+    sender-kafka:
+      topic: ${spring.application.name}-websocket # Message sent Kafka Topic
+      consumer-group: ${spring.application.name}-websocket-consumer # Message sent Kafka Consumer Group
+  xss:
+    enable: false
+    exclude-urls: # The following two url，For demonstration only，It doesn't matter if you remove the configuration
+      - ${spring.boot.admin.context-path}/** # Not processed Spring Boot Admin Request
+      - ${management.endpoints.web.base-path}/** # Not processed Actuator Request
+  pay:
+    order-notify-url: http://pay.econets.cn/admin-api/pay/notify/order # Payment channel【Payment】Callback address
+    refund-notify-url: http://pay.econets.cn/admin-api/pay/notify/refund # Payment channel【Refund】Callback address
+
+justauth:
+  enabled: true
+  type:
+    DINGTALK: # DingTalk
+      client-id: dingvrnreaje3yqvzhxg
+      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
+      ignore-check-redirect-uri: true
+    WECHAT_ENTERPRISE: # Enterprise WeChat
+      client-id: wwd411c69a39ad2e54
+      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
+      agent-id: 1000004
+      ignore-check-redirect-uri: true
+  cache:
+    type: REDIS
+    prefix: 'social_auth_state:' # Cache prefix，Currently only Redis Cache effective，Default JUSTAUTH::STATE::
+    timeout: 24h # Timeout duration，Currently only Redis Cache effective，Default 3 Minutes

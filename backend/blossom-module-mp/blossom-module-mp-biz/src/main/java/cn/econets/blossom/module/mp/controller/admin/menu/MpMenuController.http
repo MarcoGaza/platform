@@ -1,0 +1,50 @@
+### Request /mp/menu/save Interface => Success
+POST {{baseUrl}}/mp/menu/save
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "accountId": "1",
+  "menus": [
+    {
+      "type":"click",
+      "name":"Today's song",
+      "menuKey":"V1001_TODAY_MUSIC"
+    },
+    {
+      "name":"Search",
+      "type":"view",
+      "url":"https://www.soso.com/"
+    },
+    {
+      "name": "Parent button",
+      "children": [
+        {
+          "type":"click",
+          "name":"Return Home",
+          "menuKey":"MUSIC"
+        },
+        {
+          "name":"Don't say",
+          "type":"view",
+          "url":"https://www.soso.com/"
+        }]
+    }]
+}
+
+### Request /mp/menu/save Interface => Success（Clear）
+POST {{baseUrl}}/mp/menu/save
+Content-Type: application/json
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
+
+{
+  "accountId": "1",
+  "menus": []
+}
+
+### Request /mp/menu/list Interface => Success
+GET {{baseUrl}}/mp/menu/list?accountId=1
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenentId}}
